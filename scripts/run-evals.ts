@@ -14,6 +14,7 @@ import { EXTRACTION_CASES } from '../evals/datasets/extraction';
 import { aggregate, scoreCase, CaseScore } from '../evals/score';
 import { runAgent } from '../src/ai/agent/runAgent';
 import { LLMExtractor, Extractor } from '../src/ai/extraction/llmExtractor';
+import { decideRoute, HybridExtractor } from '../src/ai/extraction/hybridExtractor';
 import { RulesExtractor } from '../src/ai/extraction/rulesExtractor';
 import { AnthropicProvider } from '../src/ai/llm/providers/anthropic';
 import { ScriptedProvider } from '../src/ai/llm/providers/scripted';
@@ -31,6 +32,7 @@ interface ResultsFile {
   generatedAt: string;
   extraction: Record<string, { system: string; ranAt: string; overall: ReturnType<typeof aggregate>; bySplit: Record<string, ReturnType<typeof aggregate>>; cases: CaseScore[] }>;
   agent: Record<string, { system: string; ranAt: string; passRate: number; groundedRate: number; meanSteps: number; cases: unknown[] }>;
+  routing?: { ranAt: string; llmShare: number; bySplit: Record<string, { docs: number; toLlm: number }>; cases: { id: string; split: string; path: string; reason: string }[] };
 }
 
 function load(): ResultsFile {
@@ -114,7 +116,10 @@ async function main() {
   const agentName = arg('agent') ?? (arg('extractor') ? undefined : 'scripted');
 
   if (extractorName) {
-    const extractor = extractorName === 'rules' ? new RulesExtractor() : new LLMExtractor(makeProvider(extractorName));
+    const extractor =
+      extractorName === 'rules' ? new RulesExtractor()
+      : extractorName === 'hybrid' ? new HybridExtractor(new LLMExtractor(makeProvider('anthropic')))
+      : new LLMExtractor(makeProvider(extractorName));
     console.log(`Extraction eval: ${extractor.id} on ${EXTRACTION_CASES.length} documents`);
     const r = await evalExtraction(extractor);
     results.extraction[extractorName] = { system: extractor.id, ranAt: now, ...r };
@@ -130,6 +135,17 @@ async function main() {
     results.agent[agentName] = { system: `${provider.id}:${provider.model}`, ranAt: now, ...r };
     console.log(`  pass ${(r.passRate * 100).toFixed(0)}%  grounded ${(r.groundedRate * 100).toFixed(0)}%  mean steps ${r.meanSteps.toFixed(1)}`);
   }
+
+  // Hybrid routing decisions are deterministic, so they are measured on every run (no key needed)
+  const routes = EXTRACTION_CASES.map((c) => ({ id: c.id, split: c.split, ...decideRoute(c) })).map(({ rulesOutput: _o, ...r }) => r);
+  const bySplit: Record<string, { docs: number; toLlm: number }> = {};
+  for (const r of routes) {
+    bySplit[r.split] ??= { docs: 0, toLlm: 0 };
+    bySplit[r.split].docs++;
+    if (r.path === 'llm') bySplit[r.split].toLlm++;
+  }
+  results.routing = { ranAt: now, llmShare: routes.filter((r) => r.path === 'llm').length / routes.length, bySplit, cases: routes };
+  console.log(`Hybrid routing: ${routes.filter((r) => r.path === 'llm').length}/${routes.length} documents need an LLM call`);
 
   results.generatedAt = now;
   mkdirSync('evals/results', { recursive: true });
