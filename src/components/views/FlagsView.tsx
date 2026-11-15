@@ -1,127 +1,105 @@
-import { AlertTriangle, AlertCircle, Info, CheckCircle, MessageSquare } from 'lucide-react';
-import { mockAnalysisState } from '@/data/mockData';
+import { useState } from 'react';
+import { CheckCircle2, Copy, RotateCcw, XCircle, Bot, Scale, Gauge, ShieldAlert, GitCompare } from 'lucide-react';
+import { useCase } from '@/state/CaseContext';
+import { inr, PageHeader, PriorityBadge } from '@/components/common';
+import type { FlagView } from '@/domain/caseFile';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+const SOURCE: Record<FlagView['source'], { label: string; icon: typeof Bot }> = {
+  rule: { label: 'Reconciliation rule', icon: Scale },
+  model: { label: 'Raised by AI', icon: Bot },
+  confidence: { label: 'Low confidence', icon: Gauge },
+  grounding: { label: 'Citation check', icon: ShieldAlert },
+  conflict: { label: 'Document conflict', icon: GitCompare },
+};
+
+function FlagCard({ flag }: { flag: FlagView }) {
+  const { dispatch } = useCase();
+  const [note, setNote] = useState(flag.note ?? '');
+  const S = SOURCE[flag.source];
+  const open = flag.state === 'open';
+  return (
+    <div className={cn('stat-card', !open && 'opacity-60')}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1 min-w-0 flex-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <S.icon className="w-3.5 h-3.5" /> {S.label}
+            {flag.amount !== undefined && <span>· {inr(Math.abs(flag.amount))} at stake</span>}
+          </div>
+          <h3 className="font-semibold">{flag.title}</h3>
+          <p className="text-sm text-muted-foreground">{flag.detail}</p>
+        </div>
+        <PriorityBadge priority={flag.priority} />
+      </div>
+      <div className="mt-3 rounded-lg bg-muted/50 p-3 text-sm">
+        <span className="text-xs font-medium text-muted-foreground">Question for {flag.question.startsWith('Reviewer') ? 'reviewer' : 'client'}: </span>
+        {flag.question.replace(/^Reviewer:\s*/, '')}
+      </div>
+      {open ? (
+        <div className="mt-3 flex flex-col md:flex-row gap-2">
+          <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Resolution note (e.g. client confirmed coaching was for self, not claimed)" className="min-h-[40px] flex-1" rows={1} />
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => dispatch({ type: 'setFlagState', id: flag.id, status: 'resolved', note })}><CheckCircle2 className="w-4 h-4" /> Resolve</Button>
+            <Button size="sm" variant="outline" onClick={() => dispatch({ type: 'setFlagState', id: flag.id, status: 'dismissed', note })}><XCircle className="w-4 h-4" /> Dismiss</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+          <span className="capitalize">{flag.state}{flag.note ? ` — ${flag.note}` : ''}</span>
+          <button className="inline-flex items-center gap-1 hover:underline" onClick={() => dispatch({ type: 'setFlagState', id: flag.id, status: 'open' })}><RotateCcw className="w-3 h-3" /> Reopen</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function FlagsView() {
-  const { flags } = mockAnalysisState;
-  const unresolvedCount = flags.filter(f => !f.resolved).length;
+  const { summary, caseFile } = useCase();
+  const [emailOpen, setEmailOpen] = useState(false);
+  const clientQs = summary.openFlags.filter((f) => !f.question.startsWith('Reviewer') && !f.question.startsWith('No action'));
 
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return <AlertTriangle className="w-5 h-5 text-destructive" />;
-      case 'medium':
-        return <AlertCircle className="w-5 h-5 text-warning" />;
-      default:
-        return <Info className="w-5 h-5 text-info" />;
-    }
-  };
+  const email = `Subject: Documents needed for your FY ${caseFile.client.fy} income-tax return
 
-  const getPriorityClass = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'flag-high';
-      case 'medium':
-        return 'flag-medium';
-      default:
-        return 'flag-low';
-    }
-  };
+Dear ${caseFile.client.name.split(' ')[0]},
 
-  const getCategoryLabel = (category: string) => {
-    const labels: Record<string, string> = {
-      'missing-doc': 'Missing Documentation',
-      'unclear-expense': 'Unclear Expense',
-      'inconsistency': 'Data Inconsistency',
-      'verification-needed': 'Verification Required',
-    };
-    return labels[category] || category;
-  };
+Thank you for sharing your documents. To complete your return we need a few more details:
+
+${clientQs.map((f, i) => `${i + 1}. ${f.question}`).join('\n')}
+
+Please reply to this email with the documents or details at your earliest convenience.
+
+Regards`;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Flagged Items</h1>
-          <p className="text-muted-foreground mt-1">
-            Items requiring clarification or additional documentation
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-warning/10 text-warning">
-            {unresolvedCount} Unresolved
-          </span>
-        </div>
-      </div>
+      <PageHeader
+        title="Flags"
+        subtitle="Deterministic reconciliation rules (AIS vs documents, thresholds, caps), questions the AI raised while reading documents, and facts whose citation or confidence needs a human. Rule flags clear themselves when the data is fixed."
+        actions={<Button size="sm" variant="outline" disabled={!clientQs.length} onClick={() => setEmailOpen(true)}>Draft client email ({clientQs.length})</Button>}
+      />
 
-      {/* Priority Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        {(['high', 'medium', 'low'] as const).map((priority) => {
-          const count = flags.filter(f => f.priority === priority && !f.resolved).length;
-          return (
-            <div key={priority} className={cn("stat-card border-l-4", getPriorityClass(priority))}>
-              <div className="flex items-center gap-2">
-                {getPriorityIcon(priority)}
-                <span className="capitalize font-medium">{priority} Priority</span>
-              </div>
-              <p className="text-2xl font-bold mt-2">{count}</p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Flags List */}
+      {summary.flags.length === 0 && <p className="text-sm text-muted-foreground">No flags.</p>}
       <div className="space-y-4">
-        {flags.map((flag) => (
-          <div 
-            key={flag.id}
-            className={cn(
-              "p-5 rounded-xl border-l-4 bg-card border border-border transition-all",
-              getPriorityClass(flag.priority),
-              flag.resolved && "opacity-60"
-            )}
-          >
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 mt-0.5">
-                {flag.resolved ? (
-                  <CheckCircle className="w-5 h-5 text-success" />
-                ) : (
-                  getPriorityIcon(flag.priority)
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-semibold">{flag.itemDescription}</h3>
-                  <span className="section-badge bg-muted text-muted-foreground text-xs">
-                    {getCategoryLabel(flag.category)}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">{flag.reason}</p>
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
-                  <MessageSquare className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                  <p className="text-sm italic">"{flag.question}"</p>
-                </div>
-              </div>
-              <div className="flex-shrink-0">
-                {!flag.resolved && (
-                  <Button size="sm" variant="outline">
-                    Mark Resolved
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
+        {summary.flags.map((f) => <FlagCard key={f.id} flag={f} />)}
       </div>
 
-      {flags.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          <CheckCircle className="w-12 h-12 mx-auto mb-4 text-success" />
-          <p className="text-lg font-medium">All items verified</p>
-          <p className="text-sm">No flags or issues detected in the analysis</p>
-        </div>
-      )}
+      <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Client follow-up email</DialogTitle></DialogHeader>
+          <pre className="text-sm whitespace-pre-wrap bg-muted/50 rounded-lg p-4 max-h-[60vh] overflow-auto">{email}</pre>
+          <Button
+            onClick={() => {
+              navigator.clipboard?.writeText(email).then(() => toast.success('Copied to clipboard'), () => toast.error('Clipboard unavailable'));
+            }}
+          >
+            <Copy className="w-4 h-4" /> Copy
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

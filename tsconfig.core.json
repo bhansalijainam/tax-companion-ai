@@ -1,0 +1,17 @@
+{
+  // Strict type-check for the parts that must be correct: engine, domain, AI layer, server.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node"]
+  },
+  "include": ["src/engine", "src/domain", "src/ai", "src/fixtures", "server", "api", "evals", "scripts"],
+  "exclude": ["**/*.test.ts"]
+}

@@ -1,76 +1,90 @@
-import { useState } from 'react';
-import { AppSidebar } from '@/components/AppSidebar';
+import { useEffect, useState } from 'react';
+import { AppSidebar, MOBILE_NAV, Section } from '@/components/AppSidebar';
+import { ModeIndicator } from '@/components/common';
 import { DashboardView } from '@/components/views/DashboardView';
-import { UploadView } from '@/components/views/UploadView';
-import { IncomeView } from '@/components/views/IncomeView';
-import { ExpensesView } from '@/components/views/ExpensesView';
-import { InvestmentsView } from '@/components/views/InvestmentsView';
+import { DocumentsView } from '@/components/views/DocumentsView';
+import { ReviewView } from '@/components/views/ReviewView';
 import { FlagsView } from '@/components/views/FlagsView';
 import { TaxCalculationView } from '@/components/views/TaxCalculationView';
 import { ChatView } from '@/components/views/ChatView';
 import { ReportView } from '@/components/views/ReportView';
-import { Bell, Search, Settings } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { EvalsView } from '@/components/views/EvalsView';
+import { ArchitectureView } from '@/components/views/ArchitectureView';
+import { Button } from '@/components/ui/button';
+import { RotateCcw } from 'lucide-react';
+import { useCase } from '@/state/CaseContext';
+import { cn } from '@/lib/utils';
+
+const SECTIONS = new Set<Section>(MOBILE_NAV.map((n) => n.id));
+
+function sectionFromHash(): Section {
+  const h = window.location.hash.replace('#', '') as Section;
+  return SECTIONS.has(h) ? h : 'dashboard';
+}
 
 const Index = () => {
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [active, setActive] = useState<Section>(sectionFromHash);
+  const { loadSample, caseFile } = useCase();
 
-  const renderView = () => {
-    switch (activeSection) {
-      case 'dashboard':
-        return <DashboardView />;
-      case 'upload':
-        return <UploadView />;
-      case 'income':
-        return <IncomeView />;
-      case 'expenses':
-        return <ExpensesView />;
-      case 'investments':
-        return <InvestmentsView />;
-      case 'flags':
-        return <FlagsView />;
-      case 'tax':
-        return <TaxCalculationView />;
-      case 'chat':
-        return <ChatView />;
-      case 'report':
-        return <ReportView />;
-      default:
-        return <DashboardView />;
-    }
+  useEffect(() => {
+    const onHash = () => setActive(sectionFromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  const go = (s: Section) => {
+    window.location.hash = s;
+    setActive(s);
+    window.scrollTo({ top: 0 });
+  };
+
+  const views: Record<Section, JSX.Element> = {
+    dashboard: <DashboardView go={go} />,
+    documents: <DocumentsView go={go} />,
+    review: <ReviewView />,
+    flags: <FlagsView />,
+    tax: <TaxCalculationView go={go} />,
+    chat: <ChatView />,
+    report: <ReportView />,
+    evals: <EvalsView />,
+    architecture: <ArchitectureView />,
   };
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <AppSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-      
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="h-16 border-b border-border bg-card/80 backdrop-blur-sm px-6 flex items-center justify-between sticky top-0 z-10">
-          <div className="flex items-center gap-4 flex-1 max-w-md">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search clients, documents..." 
-                className="pl-9 bg-muted/50 border-transparent focus:border-border"
-              />
+      <AppSidebar activeSection={active} onSectionChange={go} />
+
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10 print:hidden">
+          <div className="h-14 px-4 md:px-6 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold truncate">
+                {caseFile.client.name} <span className="text-muted-foreground font-normal">· PAN {caseFile.client.pan} · AY {caseFile.client.ay}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <ModeIndicator />
+              <Button variant="ghost" size="sm" onClick={loadSample} title="Reset to the sample case">
+                <RotateCcw className="w-4 h-4" />
+                <span className="hidden sm:inline">Reset demo</span>
+              </Button>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <button className="p-2 rounded-lg hover:bg-muted transition-colors relative">
-              <Bell className="w-5 h-5 text-muted-foreground" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-destructive" />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-              <Settings className="w-5 h-5 text-muted-foreground" />
-            </button>
-          </div>
+          <nav className="md:hidden flex gap-1 overflow-x-auto px-3 pb-2 no-scrollbar">
+            {MOBILE_NAV.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => go(n.id)}
+                className={cn('whitespace-nowrap rounded-full px-3 py-1 text-xs', active === n.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}
+              >
+                {n.label}
+              </button>
+            ))}
+          </nav>
         </header>
 
-        {/* Main Content */}
-        <main className="flex-1 p-6 overflow-auto">
-          {renderView()}
+        <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
+          <div className="mx-auto max-w-6xl">{views[active]}</div>
         </main>
       </div>
     </div>

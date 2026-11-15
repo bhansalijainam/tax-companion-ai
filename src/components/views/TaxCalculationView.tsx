@@ -1,150 +1,101 @@
-import { formatCurrency } from '@/lib/formatters';
-import { mockAnalysisState } from '@/data/mockData';
-import { ArrowRight, CheckCircle, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { useCase } from '@/state/CaseContext';
+import { inr, PageHeader } from '@/components/common';
+import type { Section } from '@/components/AppSidebar';
+import { deductionHeadroom, oldRegimeBreakEven } from '@/engine/compute';
+import type { TaxResult } from '@/engine/types';
+import { FY } from '@/engine/rules';
+import { cn } from '@/lib/utils';
 
-export function TaxCalculationView() {
-  const { taxCalculation, income, investments } = mockAnalysisState;
-  
-  if (!taxCalculation) return null;
+function Trace({ result, recommended }: { result: TaxResult; recommended: boolean }) {
+  return (
+    <div className={cn('stat-card', recommended && 'border-2 border-accent')}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold">{result.regime === 'old' ? 'Old regime' : 'New regime (s.115BAC)'}</h3>
+        {recommended && (
+          <span className="section-badge bg-accent/15 text-accent"><CheckCircle className="w-3 h-3 mr-1" /> Lower tax</span>
+        )}
+      </div>
+      <table className="w-full text-sm">
+        <tbody>
+          {result.trace.map((l) => (
+            <tr key={l.key} className={cn('border-b border-border/40 last:border-0', (l.kind === 'subtotal' || l.kind === 'total') && 'font-semibold')}>
+              <td className="py-1.5 pr-2">
+                <span className={cn(l.kind === 'deduction' || l.kind === 'credit' ? 'pl-3 text-muted-foreground' : '')}>{l.label}</span>
+                {l.rule && <span className="ml-2 text-[10px] text-muted-foreground font-mono">{l.rule}</span>}
+                {l.note && <p className="pl-3 text-[11px] text-muted-foreground font-normal">{l.note}</p>}
+              </td>
+              <td className={cn('py-1.5 text-right number-tabular whitespace-nowrap align-top', l.amount < 0 && 'text-muted-foreground', l.kind === 'total' && 'text-base')}>
+                {inr(l.amount)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {result.warnings.map((w) => (
+        <p key={w} className="mt-3 text-xs text-warning flex gap-1"><AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" /> {w}</p>
+      ))}
+    </div>
+  );
+}
 
-  const totalIncome = income.reduce((sum, i) => sum + i.amount, 0);
-  const totalInvestments = investments.reduce((sum, i) => sum + i.amount, 0);
-
-  const oldRegimeSlabs = [
-    { range: 'Up to ₹2,50,000', rate: '0%', amount: 0 },
-    { range: '₹2,50,001 - ₹5,00,000', rate: '5%', amount: 12500 },
-    { range: '₹5,00,001 - ₹10,00,000', rate: '20%', amount: 100000 },
-    { range: 'Above ₹10,00,000', rate: '30%', amount: 82500 },
-  ];
-
-  const newRegimeSlabs = [
-    { range: 'Up to ₹3,00,000', rate: '0%', amount: 0 },
-    { range: '₹3,00,001 - ₹6,00,000', rate: '5%', amount: 15000 },
-    { range: '₹6,00,001 - ₹9,00,000', rate: '10%', amount: 30000 },
-    { range: '₹9,00,001 - ₹12,00,000', rate: '15%', amount: 45000 },
-    { range: '₹12,00,001 - ₹15,00,000', rate: '20%', amount: 60000 },
-    { range: 'Above ₹15,00,000', rate: '30%', amount: 24000 },
-  ];
+export function TaxCalculationView({ go }: { go: (s: Section) => void }) {
+  const { summary } = useCase();
+  const { comparison: cmp, inputs, pendingReview, openFlags } = summary;
+  const headroom = deductionHeadroom(inputs);
+  const breakEven = cmp.recommended === 'new' ? oldRegimeBreakEven(inputs) : 0;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Tax Calculation</h1>
-        <p className="text-muted-foreground mt-1">
-          Comparison between Old and New Tax Regimes
+      <PageHeader
+        title="Tax computation"
+        subtitle={`Deterministic engine, FY ${FY} rules (Finance (No. 2) Act 2024). Every line shows its section. The AI never produces these numbers — it can only call this engine.`}
+      />
+
+      {(pendingReview > 0 || openFlags.length > 0) && (
+        <div className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm flex gap-2">
+          <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+          <span>
+            Provisional. {pendingReview > 0 && <><button className="underline" onClick={() => go('review')}>{pendingReview} facts</button> not yet reviewed. </>}
+            {openFlags.length > 0 && <><button className="underline" onClick={() => go('flags')}>{openFlags.length} open flags</button> could change the result.</>}
+          </span>
+        </div>
+      )}
+
+      <div className="stat-card bg-gradient-to-r from-success/10 to-accent/10 border-success/30">
+        <p className="text-sm text-muted-foreground">Recommendation</p>
+        <p className="text-xl font-semibold mt-1">
+          {cmp.recommended === 'old' ? 'Old regime' : 'New regime'} saves <span className="text-success">{inr(cmp.savings)}</span>
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {inr(cmp.old.totalTax)} under the old regime vs {inr(cmp.new.totalTax)} under the new regime.
+          {cmp.recommended === 'old' && ' Salaried taxpayers opt out of the default regime in the return itself (no Form 10-IEA needed without business income).'}
         </p>
       </div>
 
-      {/* Income Summary */}
-      <div className="stat-card">
-        <h3 className="text-lg font-semibold mb-4">Income Summary</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 rounded-lg bg-muted/50">
-            <p className="text-sm text-muted-foreground">Gross Income</p>
-            <p className="text-xl font-bold number-tabular">{formatCurrency(taxCalculation.grossIncome)}</p>
-          </div>
-          <div className="p-4 rounded-lg bg-muted/50">
-            <p className="text-sm text-muted-foreground">Total Deductions</p>
-            <p className="text-xl font-bold number-tabular text-accent">{formatCurrency(taxCalculation.totalDeductions)}</p>
-          </div>
-          <div className="p-4 rounded-lg bg-muted/50">
-            <p className="text-sm text-muted-foreground">Taxable Income</p>
-            <p className="text-xl font-bold number-tabular">{formatCurrency(taxCalculation.taxableIncome)}</p>
-          </div>
-          <div className="p-4 rounded-lg bg-success/10">
-            <p className="text-sm text-success">Investments (Ch VI-A)</p>
-            <p className="text-xl font-bold number-tabular text-success">{formatCurrency(totalInvestments)}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Regime Comparison */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Old Regime */}
-        <div className="stat-card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Old Tax Regime</h3>
-            <span className="section-badge bg-muted text-muted-foreground">With Deductions</span>
-          </div>
-          <div className="space-y-2 mb-4">
-            {oldRegimeSlabs.filter(s => s.amount > 0).map((slab, i) => (
-              <div key={i} className="flex justify-between text-sm py-1">
-                <span className="text-muted-foreground">{slab.range}</span>
-                <span className="font-medium">{slab.rate} = {formatCurrency(slab.amount)}</span>
-              </div>
-            ))}
-          </div>
-          <div className="pt-4 border-t border-border">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold">Total Tax Liability</span>
-              <span className="text-2xl font-bold number-tabular">{formatCurrency(taxCalculation.taxOldRegime)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* New Regime */}
-        <div className="stat-card border-2 border-accent">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">New Tax Regime</h3>
-            <span className="section-badge bg-accent/15 text-accent">
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Recommended
-            </span>
-          </div>
-          <div className="space-y-2 mb-4">
-            {newRegimeSlabs.filter(s => s.amount > 0).map((slab, i) => (
-              <div key={i} className="flex justify-between text-sm py-1">
-                <span className="text-muted-foreground">{slab.range}</span>
-                <span className="font-medium">{slab.rate} = {formatCurrency(slab.amount)}</span>
-              </div>
-            ))}
-          </div>
-          <div className="pt-4 border-t border-accent/30">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold">Total Tax Liability</span>
-              <span className="text-2xl font-bold number-tabular text-accent">{formatCurrency(taxCalculation.taxNewRegime)}</span>
-            </div>
-          </div>
-        </div>
+        <Trace result={cmp.old} recommended={cmp.recommended === 'old'} />
+        <Trace result={cmp.new} recommended={cmp.recommended === 'new'} />
       </div>
 
-      {/* Savings Summary */}
-      <div className="stat-card bg-gradient-to-r from-success/10 to-accent/10 border-success/30">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center">
-              <TrendingDown className="w-6 h-6 text-success" />
-            </div>
-            <div>
-              <p className="text-lg font-semibold">Potential Tax Savings</p>
-              <p className="text-sm text-muted-foreground">
-                By choosing {taxCalculation.recommendedRegime === 'new' ? 'New' : 'Old'} Regime
-              </p>
-            </div>
-          </div>
-          <p className="text-3xl font-bold text-success number-tabular">
-            {formatCurrency(taxCalculation.savings)}
-          </p>
-        </div>
-      </div>
-
-      {/* Recommendation */}
       <div className="stat-card">
-        <h3 className="text-lg font-semibold mb-4">AI Recommendation</h3>
-        <div className="p-4 rounded-lg bg-accent/5 border border-accent/20">
-          <p className="text-sm leading-relaxed">
-            Based on the analysis, the <strong>New Tax Regime</strong> is recommended for this client. 
-            The deductions claimed under Chapter VI-A (₹{totalInvestments.toLocaleString('en-IN')}) 
-            are not sufficient to offset the benefit of lower tax slabs in the new regime. 
-            The client can save <strong>₹{taxCalculation.savings.toLocaleString('en-IN')}</strong> by opting 
-            for the New Regime.
-          </p>
-        </div>
-        <div className="mt-4 p-4 rounded-lg bg-muted/50">
-          <p className="text-sm text-muted-foreground">
-            <strong>Note:</strong> If the client increases 80C investments by ₹30,000 (remaining limit), 
-            the old regime may become more beneficial. Consider advising investment before March 31.
-          </p>
+        <h3 className="font-semibold mb-1">Planning: unused old-regime deductions</h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          {cmp.recommended === 'old'
+            ? 'The old regime already wins, so each rupee of unused headroom saves tax at the marginal rate.'
+            : breakEven ? `The old regime would need about ${inr(breakEven)} more in deductions to win.` : 'No realistic amount of extra deductions makes the old regime cheaper.'}
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {headroom.map((h) => (
+            <div key={h.section} className="rounded-lg bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground">{h.section}</p>
+              <p className="font-semibold number-tabular">{inr(h.remaining)} <span className="text-xs font-normal text-muted-foreground">unused</span></p>
+              <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div className="h-full bg-accent" style={{ width: `${Math.min(100, (h.claimed / h.cap) * 100)}%` }} />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">{inr(Math.min(h.claimed, h.cap))} of {inr(h.cap)}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

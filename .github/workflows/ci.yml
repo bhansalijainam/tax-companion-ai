@@ -1,0 +1,23 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: Live-mode wiring (mock Messages API, no key)
+        run: npm run smoke:live
+      - name: Baseline evals (rules extractor + scripted agent)
+        run: npm run evals
+      - run: npm run build
