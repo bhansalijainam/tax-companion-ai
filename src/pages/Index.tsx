@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { AppSidebar, MOBILE_NAV, Section } from '@/components/AppSidebar';
+import { AppSidebar } from '@/components/AppSidebar';
+import { MOBILE_NAV, type Section } from '@/components/nav';
 import { ModeIndicator } from '@/components/common';
 import { DashboardView } from '@/components/views/DashboardView';
 import { DocumentsView } from '@/components/views/DocumentsView';

@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { useCase } from '@/state/CaseContext';
 import { Switch } from '@/components/ui/switch';
 
-export const inr = (n: number) => (n < 0 ? '−' : '') + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
+import { inr } from '@/lib/formatters';
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: React.ReactNode }) {
   return (

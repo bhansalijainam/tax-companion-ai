@@ -9,7 +9,7 @@
 | **Problem** | During July filing season a CA firm spends 45–90 min per salaried client copying numbers out of Form 16, AIS, bank statements and receipts, then reconciling them. Most of that time goes to finding numbers, not to judgement. |
 | **What it does** | Extracts facts with verbatim citations, verifies each citation in code, reconciles against AIS, computes old vs new regime with a line-by-line trace, answers questions through a tool-using assistant, and produces a sign-off working paper. |
 | **Design stance** | The LLM is used only where judgement over unstructured input pays off. Arithmetic, thresholds, caps and reconciliation are tested code. The model cannot put a number on screen that code has not produced or verified. |
-| **Proof** | 56 unit tests, including a hand-verified tax engine. A labelled extraction eval with template, variant and adversarial splits. An agent eval. A live-mode smoke test against a mock Messages API. All run in CI. |
+| **Proof** | 61 unit tests, including a hand-verified tax engine. A labelled extraction eval with template, variant and adversarial splits. An agent eval. A live-mode smoke test against a mock Messages API. All run in CI. |
 
 | Overview | Assistant with tool trace |
 |---|---|
@@ -56,9 +56,9 @@ A good path through the demo:
 | Tax engine | `src/engine/` | Pure TypeScript. Slabs, s.87A rebate and marginal relief, surcharge marginal relief, HRA's three limbs, house-property loss caps per regime, s.111A/112A with basic-exemption shortfall, 288A/B rounding. 23 hand-computed tests. |
 | Domain | `src/domain/` | Field catalogue (the contract between model and engine), facts with provenance, reconciliation rules that re-run on every change. |
 | LLM interface | `src/ai/llm/` | `LLMProvider` with a Claude adapter (official SDK, strict tools, structured outputs, adaptive thinking, server-side refusal fallback) and a scripted adapter for demo mode. Adding a provider means implementing one method. |
-| Extraction | `src/ai/extraction/` | JSON-schema structured output, zod re-validation, then a **grounding check**: the quote must appear verbatim in the document and contain the value, or confidence is capped at 50% and the fact is flagged. |
+| Extraction | `src/ai/extraction/` | JSON-schema structured output, zod re-validation, then a **grounding check**: the quote must appear verbatim in the document and contain the value, or confidence is capped at 50% and the fact is flagged. Optional **hybrid routing** (`EXTRACTION_STRATEGY=hybrid`) runs the rules first and calls the LLM only when they miss a field the document type must contain. That skips the model for 64% of the eval set. |
 | Assistant | `src/ai/agent/` | Six read-only tools over the case. Bounded loop (6 steps). Tool errors go back to the model as results. Every ₹ amount in the answer is checked against tool output. |
-| Server | `server/`, `api/` | Web-standard `Request → Response` handlers, used as Vercel functions and as Vite dev middleware. Body limits, typed error mapping, optional `ACCESS_TOKEN`. |
+| Server | `server/`, `api/` | Web-standard `Request → Response` handlers, used as Vercel functions and as Vite dev middleware. Body limits, per-IP rate limit, generic client errors (provider detail only in logs), constant-time `ACCESS_TOKEN` check. |
 | Evals | `evals/`, `scripts/run-evals.ts` | Field-level precision/recall by split, forbidden-value checks (double counting, injection), citation-verified rate, agent pass rate. Results render on the Evals page. |
 
 ## Results (committed in `evals/results/latest.json`)
@@ -67,6 +67,8 @@ A good path through the demo:
 |---|---|---|---|---|---|
 | `rules:v1` (regex baseline) | 100% | 14% | 100% | 100% | 100% |
 | Claude extraction | not yet run (needs a key): `npm run evals -- --extractor anthropic` | | | | |
+
+**Hybrid routing:** 9 of 14 documents (all template docs and the injection attempt) are fully covered by rules and need no LLM call. All 5 variant documents are routed to the LLM.
 
 The baseline is perfect on the layouts it was written for and fails on almost everything else. That gap is why this product needs an LLM. The citation check is why it can safely use one. The Claude rows were not run in this build because no key was available; the command above fills them in, and the Evals page picks them up.
 

@@ -1,7 +1,8 @@
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { useCase } from '@/state/CaseContext';
-import { inr, PageHeader } from '@/components/common';
-import type { Section } from '@/components/AppSidebar';
+import { PageHeader } from '@/components/common';
+import { inr } from '@/lib/formatters';
+import type { Section } from '@/components/nav';
 import { deductionHeadroom, oldRegimeBreakEven } from '@/engine/compute';
 import type { TaxResult } from '@/engine/types';
 import { FY } from '@/engine/rules';

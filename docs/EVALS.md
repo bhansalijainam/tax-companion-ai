@@ -27,6 +27,18 @@ The eval set is the release gate for prompt, model and schema changes.
 | rules:v1 | 100% | 14% | 100% | 100% | 0 |
 | Claude | run `npm run evals -- --extractor anthropic` | | | | |
 
+## Cost routing (hybrid extractor)
+
+`decideRoute()` is pure, so routing is measured on every run without a key. A document stays on the rules path only if rules found every *coverage anchor* for its type (e.g. gross salary **and** TDS for a Form 16). Anything partial, unknown or binary goes to the LLM.
+
+| Split | Docs | Rules only | Sent to LLM |
+|---|---|---|---|
+| template | 8 | 8 | 0 |
+| variant | 5 | 0 | 5 |
+| adversarial | 1 | 1 | 0 |
+
+The rules path scores 100% on every document it keeps. So the hybrid's quality on this set equals the LLM's quality on the variants, at about a third of the LLM calls. Confirm with `npm run evals -- --extractor hybrid` before setting `EXTRACTION_STRATEGY=hybrid` in production.
+
 ## Assistant
 
 **Data**: `evals/datasets/agent.ts`, 6 questions on the demo case. Expected figures are computed **from the engine at eval time**, so the eval can't drift from the product.

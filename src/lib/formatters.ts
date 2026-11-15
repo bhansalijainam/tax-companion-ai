@@ -39,3 +39,6 @@ export const getSectionBadgeClass = (section: string): string => {
   if (sectionLower.includes('section') || sectionLower.includes('deductible')) return 'section-deductible';
   return 'section-non-deductible';
 };
+
+/** ₹ with Indian digit grouping; negative values use a true minus sign. */
+export const inr = (n: number): string => (n < 0 ? '−' : '') + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');

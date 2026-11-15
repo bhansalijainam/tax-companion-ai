@@ -5,8 +5,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCase } from '@/state/CaseContext';
+import type { Section } from './nav';
 
-export type Section = 'dashboard' | 'documents' | 'review' | 'flags' | 'tax' | 'chat' | 'report' | 'evals' | 'architecture';
 
 interface SidebarProps {
   activeSection: Section;
@@ -107,15 +107,3 @@ export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
     </aside>
   );
 }
-
-export const MOBILE_NAV: { id: Section; label: string }[] = [
-  { id: 'dashboard', label: 'Overview' },
-  { id: 'documents', label: 'Documents' },
-  { id: 'review', label: 'Review' },
-  { id: 'flags', label: 'Flags' },
-  { id: 'tax', label: 'Tax' },
-  { id: 'chat', label: 'Assistant' },
-  { id: 'report', label: 'Report' },
-  { id: 'evals', label: 'Evals' },
-  { id: 'architecture', label: 'How it works' },
-];
