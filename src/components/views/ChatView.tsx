@@ -1,190 +1,145 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Send, Bot, User, Sparkles, Wrench, ShieldCheck, ShieldAlert, ChevronDown, Trash2, AlertCircle } from 'lucide-react';
+import { useCase, type ChatMessage } from '@/state/CaseContext';
+import { PageHeader } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
-
-const sampleQuestions = [
-  "What's the total 80C deduction available?",
-  "Show me all flagged expenses",
-  "What is the recommended tax regime?",
-  "Summarize the income sources",
+const SUGGESTED = [
+  'Which regime should the client choose, and why?',
+  'What if the client invests ₹50,000 in NPS under 80CCD(1B)?',
+  'What open issues should I raise with the client before filing?',
+  'Where does the rent paid figure come from?',
+  'How much deduction headroom is left?',
 ];
 
-export function ChatView() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: "Hello! I'm your AI Tax Assistant. I've analyzed the uploaded documents for this client. You can ask me questions about their income, expenses, investments, tax calculations, or any flagged items. How can I help you today?",
-      timestamp: new Date(),
-    },
-  ]);
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+function Trace({ m }: { m: ChatMessage }) {
+  const r = m.result;
+  if (!r) return null;
+  const ungrounded = r.grounding.amounts.filter((a) => !a.grounded);
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+        {r.grounding.ok ? (
+          <span className="inline-flex items-center gap-1 text-success" title="Every ₹ figure in this answer appears in a tool result or is a statutory limit">
+            <ShieldCheck className="w-3.5 h-3.5" /> {r.grounding.amounts.length} figure{r.grounding.amounts.length === 1 ? '' : 's'} traced to tools
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-destructive" title="These figures did not come from any tool result">
+            <ShieldAlert className="w-3.5 h-3.5" /> untraced: {ungrounded.map((a) => a.text).join(', ')}
+          </span>
+        )}
+        <span>· {r.provider === 'scripted' ? 'scripted demo provider' : r.model}</span>
+        {r.usage.inputTokens > 0 && <span>· {r.usage.inputTokens.toLocaleString()} in / {r.usage.outputTokens.toLocaleString()} out tokens</span>}
+      </div>
+      {r.steps.length > 0 && (
+        <Collapsible>
+          <CollapsibleTrigger className="group inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground">
+            <Wrench className="w-3.5 h-3.5" /> {r.steps.length} tool call{r.steps.length > 1 ? 's' : ''}: {r.steps.map((s) => s.tool).join(', ')}
+            <ChevronDown className="w-3 h-3 transition-transform group-data-[state=open]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2 space-y-2">
+            {r.steps.map((s, i) => (
+              <div key={i} className="rounded-md border border-border bg-background p-2 text-[11px] font-mono">
+                <p className={cn('font-semibold', s.isError && 'text-destructive')}>{s.tool}({JSON.stringify(s.input)}) · {s.ms}ms</p>
+                <pre className="mt-1 whitespace-pre-wrap break-all text-muted-foreground max-h-40 overflow-auto">{prettify(s.output)}</pre>
+              </div>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+    </div>
+  );
+}
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+function prettify(s: string) {
+  try {
+    return JSON.stringify(JSON.parse(s), null, 1).slice(0, 3000);
+  } catch {
+    return s.slice(0, 3000);
+  }
+}
+
+export function ChatView() {
+  const { chat, chatBusy, sendChat, clearChat, mode, status } = useCase();
+  const [input, setInput] = useState('');
+  const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chat, chatBusy]);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+  const send = (text: string) => {
+    if (!text.trim() || chatBusy) return;
     setInput('');
-    setIsTyping(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const responses: Record<string, string> = {
-        '80c': "Based on the extracted documents, the total 80C deduction claimed is ₹1,50,000:\n\n• LIC Premium: ₹50,000 (from LIC_Premium_Receipt.pdf)\n• PPF Contribution: ₹1,00,000 (from PPF_Passbook.pdf)\n\nThe section 80C limit of ₹1,50,000 is fully utilized. No additional investment is required under this section.",
-        'flagged': "There are 4 flagged items requiring attention:\n\n1. **HRA Claim - ₹2,40,000** (High Priority)\n   - Missing rent receipts for verification\n\n2. **ABC Coaching Classes - ₹45,000** (Medium Priority)\n   - Unclear if educational or personal expense\n\n3. **Vehicle Purchase - ₹8,50,000** (Medium Priority)\n   - Needs depreciation schedule calculation\n\n4. **Missing GST Invoices - ₹12,000** (Low Priority)\n   - ITC may be reversed without invoices",
-        'regime': "Based on the analysis, the **New Tax Regime** is recommended.\n\n**Old Regime:** ₹1,95,000\n**New Regime:** ₹1,74,000\n\n**Savings: ₹21,000** with New Regime\n\nThe deductions under Chapter VI-A (₹2,75,000) are not sufficient to make the old regime more beneficial given the client's income level.",
-        'income': "Here's a summary of income sources:\n\n| Source | Type | Amount |\n|--------|------|--------|\n| ABC Technologies | Salary | ₹12,00,000 |\n| Flat Rent - Andheri | Rental | ₹3,60,000 |\n| HDFC Savings | Interest | ₹15,000 |\n\n**Total Gross Income: ₹15,75,000**\n\nRental income will have 30% standard deduction applied (net: ₹2,52,000).",
-      };
-
-      let response = "I'd be happy to help with that. Based on the documents analyzed:\n\nThe client has a gross income of ₹15,75,000 with total deductions of ₹2,75,000. The recommended tax regime is 'New' with potential savings of ₹21,000.\n\nIs there anything specific you'd like me to elaborate on?";
-
-      const lowerInput = input.toLowerCase();
-      if (lowerInput.includes('80c')) response = responses['80c'];
-      else if (lowerInput.includes('flag')) response = responses['flagged'];
-      else if (lowerInput.includes('regime') || lowerInput.includes('recommend')) response = responses['regime'];
-      else if (lowerInput.includes('income') || lowerInput.includes('summar')) response = responses['income'];
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-      setIsTyping(false);
-    }, 1500);
-  };
-
-  const handleQuickQuestion = (question: string) => {
-    setInput(question);
+    void sendChat(text.trim());
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] animate-fade-in">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">AI Assistant</h1>
-          <p className="text-muted-foreground mt-1">
-            Ask questions about the client's documents and analysis
-          </p>
-        </div>
-      </div>
+    <div className="flex flex-col h-[calc(100vh-7.5rem)] animate-fade-in">
+      <PageHeader
+        title="Assistant"
+        subtitle={mode === 'live'
+          ? `${status?.model} with six read-only tools over this case. It cannot do arithmetic itself: tax figures come from compute_tax, and every ₹ amount in an answer is checked against tool output.`
+          : 'Demo mode: a scripted provider picks tools by keyword and fills templates. The tools, trace and figure check are real; switch to live mode for Claude.'}
+        actions={chat.length > 0 ? <Button variant="ghost" size="sm" onClick={clearChat}><Trash2 className="w-4 h-4" /> Clear</Button> : undefined}
+      />
 
-      {/* Chat Container */}
-      <div className="flex-1 bg-card rounded-xl border border-border overflow-hidden flex flex-col">
-        {/* Messages */}
+      <div className="flex-1 mt-4 bg-card rounded-xl border border-border overflow-hidden flex flex-col min-h-0">
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "flex gap-3 animate-fade-in",
-                message.role === 'user' && "flex-row-reverse"
-              )}
-            >
-              <div className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                message.role === 'user' ? "bg-primary" : "bg-accent"
-              )}>
-                {message.role === 'user' ? (
-                  <User className="w-4 h-4 text-primary-foreground" />
-                ) : (
-                  <Bot className="w-4 h-4 text-accent-foreground" />
-                )}
-              </div>
-              <div className={cn(
-                "max-w-[75%] p-4 rounded-2xl",
-                message.role === 'user' 
-                  ? "bg-primary text-primary-foreground rounded-br-md" 
-                  : "bg-muted rounded-bl-md"
-              )}>
-                <p className="text-sm whitespace-pre-line">{message.content}</p>
-              </div>
-            </div>
-          ))}
-          
-          {isTyping && (
-            <div className="flex gap-3 animate-fade-in">
-              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-                <Bot className="w-4 h-4 text-accent-foreground" />
-              </div>
-              <div className="bg-muted p-4 rounded-2xl rounded-bl-md">
-                <div className="flex gap-1">
-                  <span className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
+          {chat.length === 0 && (
+            <div className="h-full flex flex-col items-center justify-center text-center gap-4 py-8">
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center"><Bot className="w-6 h-6 text-accent" /></div>
+              <p className="text-sm text-muted-foreground max-w-md">Ask about this client's income, deductions, regime choice, what-if scenarios, or where a number came from.</p>
+              <div className="flex flex-wrap justify-center gap-2 max-w-2xl">
+                {SUGGESTED.map((q) => (
+                  <button key={q} onClick={() => send(q)} className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/70 transition-colors">
+                    <Sparkles className="w-3 h-3 inline mr-1" />{q}
+                  </button>
+                ))}
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} />
-        </div>
 
-        {/* Quick Questions */}
-        {messages.length === 1 && (
-          <div className="px-4 pb-2">
-            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              Suggested questions
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {sampleQuestions.map((q) => (
-                <button
-                  key={q}
-                  onClick={() => handleQuickQuestion(q)}
-                  className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors"
-                >
-                  {q}
-                </button>
-              ))}
+          {chat.map((m) => (
+            <div key={m.id} className={cn('flex gap-3', m.role === 'user' && 'flex-row-reverse')}>
+              <div className={cn('w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0', m.role === 'user' ? 'bg-primary' : 'bg-accent')}>
+                {m.role === 'user' ? <User className="w-4 h-4 text-primary-foreground" /> : <Bot className="w-4 h-4 text-accent-foreground" />}
+              </div>
+              <div className={cn('max-w-[85%] md:max-w-[75%]', m.role === 'user' && 'text-right')}>
+                <div className={cn('inline-block text-left px-4 py-3 rounded-2xl text-sm', m.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md')}>
+                  {m.error ? (
+                    <p className="flex items-center gap-2 text-destructive"><AlertCircle className="w-4 h-4" /> {m.error}</p>
+                  ) : m.role === 'assistant' ? (
+                    <div className="prose-chat"><ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown></div>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{m.content}</p>
+                  )}
+                </div>
+                {m.role === 'assistant' && <Trace m={m} />}
+              </div>
             </div>
-          </div>
-        )}
+          ))}
 
-        {/* Input */}
-        <div className="p-4 border-t border-border">
-          <form 
-            onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-            className="flex gap-2"
-          >
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about income, expenses, deductions, tax calculation..."
-              className="flex-1"
-            />
-            <Button type="submit" disabled={!input.trim() || isTyping}>
-              <Send className="w-4 h-4" />
-            </Button>
-          </form>
+          {chatBusy && (
+            <div className="flex gap-3">
+              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center"><Bot className="w-4 h-4 text-accent-foreground" /></div>
+              <div className="bg-muted px-4 py-3 rounded-2xl rounded-bl-md flex gap-1 items-center">
+                {[0, 150, 300].map((d) => <span key={d} className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: `${d}ms` }} />)}
+              </div>
+            </div>
+          )}
+          <div ref={endRef} />
         </div>
+
+        <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="p-3 border-t border-border flex gap-2">
+          <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about income, deductions, regime, what-ifs…" className="flex-1" maxLength={4000} />
+          <Button type="submit" disabled={!input.trim() || chatBusy} aria-label="Send"><Send className="w-4 h-4" /></Button>
+        </form>
       </div>
     </div>
   );

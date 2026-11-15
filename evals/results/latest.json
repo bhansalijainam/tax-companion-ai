@@ -1,0 +1,444 @@
+{
+  "generatedAt": "2026-11-15T19:00:53.172Z",
+  "extraction": {
+    "rules": {
+      "system": "rules:v1",
+      "ranAt": "2026-11-15T19:00:53.172Z",
+      "overall": {
+        "cases": 14,
+        "precision": 1,
+        "recall": 0.6923076923076923,
+        "f1": 0.8181818181818181,
+        "docTypeAccuracy": 0.8571428571428571,
+        "groundedRate": 1,
+        "ambiguityRecall": 1,
+        "forbiddenHits": 0,
+        "errors": 0,
+        "meanLatencyMs": 0
+      },
+      "bySplit": {
+        "template": {
+          "cases": 8,
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "docTypeAccuracy": 1,
+          "groundedRate": 1,
+          "ambiguityRecall": 1,
+          "forbiddenHits": 0,
+          "errors": 0,
+          "meanLatencyMs": 0
+        },
+        "variant": {
+          "cases": 5,
+          "precision": 1,
+          "recall": 0.14285714285714285,
+          "f1": 0.25,
+          "docTypeAccuracy": 0.6,
+          "groundedRate": 1,
+          "ambiguityRecall": null,
+          "forbiddenHits": 0,
+          "errors": 0,
+          "meanLatencyMs": 0
+        },
+        "adversarial": {
+          "cases": 1,
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "docTypeAccuracy": 1,
+          "groundedRate": 1,
+          "ambiguityRecall": null,
+          "forbiddenHits": 0,
+          "errors": 0,
+          "meanLatencyMs": 0
+        }
+      },
+      "cases": [
+        {
+          "id": "doc-form16",
+          "split": "template",
+          "tp": 7,
+          "fp": 0,
+          "fn": 0,
+          "kindCorrect": true,
+          "groundedRate": 1,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [],
+          "extra": [],
+          "latencyMs": 1
+        },
+        {
+          "id": "doc-bank",
+          "split": "template",
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "kindCorrect": true,
+          "groundedRate": 1,
+          "ambiguityHit": true,
+          "forbiddenHits": 0,
+          "missed": [],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "doc-lic",
+          "split": "template",
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "kindCorrect": true,
+          "groundedRate": 1,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "doc-ppf",
+          "split": "template",
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "kindCorrect": true,
+          "groundedRate": 1,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "doc-health",
+          "split": "template",
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "kindCorrect": true,
+          "groundedRate": 1,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "doc-homeloan",
+          "split": "template",
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "kindCorrect": true,
+          "groundedRate": 1,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "doc-capgains",
+          "split": "template",
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "kindCorrect": true,
+          "groundedRate": 1,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "doc-ais",
+          "split": "template",
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "kindCorrect": true,
+          "groundedRate": 1,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "var-form16-tabular",
+          "split": "variant",
+          "tp": 1,
+          "fp": 0,
+          "fn": 5,
+          "kindCorrect": true,
+          "groundedRate": 1,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [
+            {
+              "field": "salary.gross",
+              "value": 1260000
+            },
+            {
+              "field": "salary.basic",
+              "value": 540000
+            },
+            {
+              "field": "salary.hraReceived",
+              "value": 216000
+            },
+            {
+              "field": "deductions.sec80C",
+              "value": 64800
+            },
+            {
+              "field": "taxesPaid.tds",
+              "value": 102300
+            }
+          ],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "var-rent-receipts",
+          "split": "variant",
+          "tp": 1,
+          "fp": 0,
+          "fn": 1,
+          "kindCorrect": true,
+          "groundedRate": 1,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [
+            {
+              "field": "salary.rentPaid",
+              "value": 264000
+            }
+          ],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "var-fd-certificate",
+          "split": "variant",
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "kindCorrect": false,
+          "groundedRate": null,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [
+            {
+              "field": "otherSources.depositInterest",
+              "value": 52300
+            },
+            {
+              "field": "taxesPaid.tds",
+              "value": 5230
+            }
+          ],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "var-icici-statement",
+          "split": "variant",
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "kindCorrect": false,
+          "groundedRate": null,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [
+            {
+              "field": "otherSources.savingsInterest",
+              "value": 12450
+            }
+          ],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "var-nps-elss",
+          "split": "variant",
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "kindCorrect": true,
+          "groundedRate": null,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [
+            {
+              "field": "deductions.sec80CCD1B",
+              "value": 50000
+            },
+            {
+              "field": "deductions.sec80C",
+              "value": 30000
+            },
+            {
+              "field": "deductions.sec80C",
+              "value": 84000
+            }
+          ],
+          "extra": [],
+          "latencyMs": 0
+        },
+        {
+          "id": "adv-injection",
+          "split": "adversarial",
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "kindCorrect": true,
+          "groundedRate": 1,
+          "ambiguityHit": null,
+          "forbiddenHits": 0,
+          "missed": [],
+          "extra": [],
+          "latencyMs": 0
+        }
+      ]
+    }
+  },
+  "agent": {
+    "scripted": {
+      "system": "scripted:scripted-demo",
+      "ranAt": "2026-11-15T19:00:53.172Z",
+      "passRate": 1,
+      "groundedRate": 1,
+      "meanSteps": 1.5,
+      "cases": [
+        {
+          "id": "regime-choice",
+          "question": "Which regime should the client choose, and by how much does it win?",
+          "pass": true,
+          "toolOk": true,
+          "missing": [],
+          "grounded": true,
+          "ungrounded": [],
+          "tools": [
+            "compute_tax",
+            "get_flags"
+          ],
+          "steps": 2,
+          "latencyMs": 14,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "cacheReadTokens": 0
+          },
+          "answer": "The **old regime** is cheaper by ₹19,400: ₹2,40,560 (old) vs ₹2,59,960 (new).\n\nUnder the old regime, taxable income is ₹15,74,540 and, after ₹2,46,800 TDS, ₹6,240 is refundable.\n\nBefore filing, resolve 3 high-priority flags that could change this:\n- Landlord PAN missing for ₹3,60,000 rent\n- AIS shows ₹52,300 deposit interest; documents show ₹0\n- Cash deposits of ₹2,50,000 need an explanation"
+        },
+        {
+          "id": "nps-what-if",
+          "question": "What if the client invests 50000 more in NPS under 80CCD(1B)? Show old regime tax before and after.",
+          "pass": true,
+          "toolOk": true,
+          "missing": [],
+          "grounded": true,
+          "ungrounded": [],
+          "tools": [
+            "compute_tax",
+            "compute_tax"
+          ],
+          "steps": 2,
+          "latencyMs": 2,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "cacheReadTokens": 0
+          },
+          "answer": "Adding ₹50,000 to NPS (80CCD(1B)) changes old-regime tax from ₹2,40,560 to ₹2,24,960. New-regime tax stays at ₹2,59,960 because it allows no such deduction.\n\n| | Old regime | New regime |\n|---|---|---|\n| As filed | ₹2,40,560 | ₹2,59,960 |\n| With NPS (80CCD(1B)) | ₹2,24,960 | ₹2,59,960 |\n\nRecommended regime after the change: **old**, saving ₹35,000 over the other regime."
+        },
+        {
+          "id": "open-flags",
+          "question": "What open issues should I raise with the client before filing?",
+          "pass": true,
+          "toolOk": true,
+          "missing": [],
+          "grounded": true,
+          "ungrounded": [],
+          "tools": [
+            "get_flags"
+          ],
+          "steps": 1,
+          "latencyMs": 0,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "cacheReadTokens": 0
+          },
+          "answer": "6 open flags, highest priority first:\n\n1. **Landlord PAN missing for ₹3,60,000 rent** (high)\n   Ask the client: Please share your landlord's PAN and a copy of the rent agreement or receipts.\n2. **AIS shows ₹52,300 deposit interest; documents show ₹0** (high)\n   Ask the client: AIS shows interest on fixed deposits we have no certificate for. Please share the FD interest certificate(s) for FY 2024-25.\n3. **Cash deposits of ₹2,50,000 need an explanation** (high)\n   Ask the client: What was the source of the cash deposited during the year (e.g. gift, sale of asset, withdrawal redeposited)? Please share supporting evidence.\n4. **TDS per AIS ₹2,52,030 vs documents ₹2,46,800** (medium)\n   Ask the client: Please share Form 16A / TDS certificates for all deductors listed in your AIS.\n5. **Coaching / tuition payment found; only school or college tuition for children qualifies…** (medium)\n   Ask the client: Who was this coaching fee for, and is it a school/college fee or private coaching?\n6. **80C claims of ₹3,10,800 exceed the ₹1,50,000 cap** (low)\n   Ask the client: No action needed. For next year, consider moving surplus 80C investments to NPS (80CCD(1B))."
+        },
+        {
+          "id": "headroom",
+          "question": "How much deduction headroom is left for this client?",
+          "pass": true,
+          "toolOk": true,
+          "missing": [],
+          "grounded": true,
+          "ungrounded": [],
+          "tools": [
+            "deduction_headroom"
+          ],
+          "steps": 1,
+          "latencyMs": 0,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "cacheReadTokens": 0
+          },
+          "answer": "Unused deduction capacity (old regime):\n\n| Section | Claimed | Cap | Unused |\n|---|---|---|---|\n| 80C | ₹3,10,800 | ₹1,50,000 | ₹0 |\n| 80CCD(1B) | ₹0 | ₹50,000 | ₹50,000 |\n| 80D (self) | ₹28,500 | ₹25,000 | ₹0 |\n| 80D (parents) | ₹32,000 | ₹50,000 | ₹18,000 |\n\nThe old regime already wins (₹2,40,560 vs ₹2,59,960), so unused headroom saves tax at the client's marginal rate."
+        },
+        {
+          "id": "source-citation",
+          "question": "Where does the rent paid figure come from?",
+          "pass": true,
+          "toolOk": true,
+          "missing": [],
+          "grounded": true,
+          "ungrounded": [],
+          "tools": [
+            "search_documents"
+          ],
+          "steps": 1,
+          "latencyMs": 1,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "cacheReadTokens": 0
+          },
+          "answer": "Matching lines in the documents on file:\n\n- **HDFC_Savings_Statement_FY24-25.pdf**, line 17: “Rent paid to ANAND KULKARNI (12 months x 30,000): Total Rs. 3,60,000”\n- **Form16_PartB_FY2024-25.pdf**, line 2: “Details of Salary Paid and any other income and tax deducted”\n- **Form16_PartB_FY2024-25.pdf**, line 11: “of which House Rent Allowance: Rs. 3,36,000”\n- **Form16_PartB_FY2024-25.pdf**, line 16: “(e) House rent allowance u/s 10(13A): Rs. 2,76,000”\n- **Form16_PartB_FY2024-25.pdf**, line 24: “Rent declared by employee: Rs. 3,60,000 (Landlord PAN: not provided)”\n- **HDFC_Savings_Statement_FY24-25.pdf**, line 6: “05/04/2024  NEFT-ANAND KULKARNI-RENT APR                 30,000.00”"
+        },
+        {
+          "id": "refund",
+          "question": "Is there tax payable or a refund under the recommended regime?",
+          "pass": true,
+          "toolOk": true,
+          "missing": [],
+          "grounded": true,
+          "ungrounded": [],
+          "tools": [
+            "compute_tax",
+            "get_flags"
+          ],
+          "steps": 2,
+          "latencyMs": 1,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0,
+            "cacheReadTokens": 0
+          },
+          "answer": "The **old regime** is cheaper by ₹19,400: ₹2,40,560 (old) vs ₹2,59,960 (new).\n\nUnder the old regime, taxable income is ₹15,74,540 and, after ₹2,46,800 TDS, ₹6,240 is refundable.\n\nBefore filing, resolve 3 high-priority flags that could change this:\n- Landlord PAN missing for ₹3,60,000 rent\n- AIS shows ₹52,300 deposit interest; documents show ₹0\n- Cash deposits of ₹2,50,000 need an explanation"
+        }
+      ]
+    }
+  }
+}

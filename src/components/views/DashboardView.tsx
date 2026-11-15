@@ -1,152 +1,102 @@
-import { TrendingUp, TrendingDown, FileText, AlertTriangle } from 'lucide-react';
-import { formatCurrency } from '@/lib/formatters';
-import { mockAnalysisState } from '@/data/mockData';
+import { ArrowRight, CheckCircle2, Circle, FileStack, ListChecks, AlertTriangle, Calculator, FileDown } from 'lucide-react';
+import { useCase } from '@/state/CaseContext';
+import { inr, PageHeader, PriorityBadge, Stat } from '@/components/common';
+import type { Section } from '@/components/AppSidebar';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-export function DashboardView() {
-  const { income, expenses, investments, flags, taxCalculation, client } = mockAnalysisState;
-  
-  const totalIncome = income.reduce((sum, i) => sum + i.amount, 0);
-  const totalDeductibleExpenses = expenses.filter(e => e.deductible).reduce((sum, e) => sum + e.amount, 0);
-  const totalInvestments = investments.reduce((sum, i) => sum + i.amount, 0);
-  const unresolvedFlags = flags.filter(f => !f.resolved).length;
+export function DashboardView({ go }: { go: (s: Section) => void }) {
+  const { caseFile, summary, mode } = useCase();
+  const { comparison: cmp, openFlags, pendingReview } = summary;
+  const rec = cmp[cmp.recommended];
+  const extracted = caseFile.documents.filter((d) => d.status === 'extracted').length;
+  const high = openFlags.filter((f) => f.priority === 'high');
 
-  const stats = [
-    { 
-      label: 'Total Income', 
-      value: formatCurrency(totalIncome), 
-      change: '+12.5%', 
-      positive: true,
-      icon: TrendingUp,
-      color: 'text-success'
-    },
-    { 
-      label: 'Deductible Expenses', 
-      value: formatCurrency(totalDeductibleExpenses), 
-      change: 'Section 30-37', 
-      positive: true,
-      icon: FileText,
-      color: 'text-accent'
-    },
-    { 
-      label: 'Total Investments', 
-      value: formatCurrency(totalInvestments), 
-      change: '80C/80D/80CCD', 
-      positive: true,
-      icon: TrendingUp,
-      color: 'text-section-80c'
-    },
-    { 
-      label: 'Flagged Items', 
-      value: unresolvedFlags.toString(), 
-      change: 'Need attention', 
-      positive: false,
-      icon: AlertTriangle,
-      color: 'text-warning'
-    },
+  const steps: { id: Section; label: string; icon: typeof FileStack; done: boolean; detail: string }[] = [
+    { id: 'documents', label: 'Collect & extract', icon: FileStack, done: extracted > 0 && extracted === caseFile.documents.length, detail: `${extracted}/${caseFile.documents.length} documents extracted` },
+    { id: 'review', label: 'Review facts', icon: ListChecks, done: caseFile.facts.length > 0 && pendingReview === 0, detail: pendingReview ? `${pendingReview} awaiting review` : 'All facts reviewed' },
+    { id: 'flags', label: 'Resolve flags', icon: AlertTriangle, done: openFlags.length === 0, detail: openFlags.length ? `${openFlags.length} open (${high.length} high)` : 'No open flags' },
+    { id: 'tax', label: 'Compute & compare', icon: Calculator, done: pendingReview === 0 && openFlags.length === 0, detail: `${cmp.recommended} regime · ${inr(rec.totalTax)}` },
+    { id: 'report', label: 'Working paper', icon: FileDown, done: false, detail: 'Sign-off memo for the file' },
   ];
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Client Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Client Analysis</h1>
-          <p className="text-muted-foreground mt-1">
-            {client?.name} • FY {client?.financialYear}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-accent/10 text-accent">
-            In Progress
-          </span>
-        </div>
-      </div>
+      <PageHeader
+        title="Case overview"
+        subtitle={`${caseFile.client.name} · FY ${caseFile.client.fy}${caseFile.client.employer ? ` · ${caseFile.client.employer}` : ''}. AI extracts and reconciles; every figure comes from the deterministic tax engine; the CA reviews and signs off.`}
+        actions={<Button onClick={() => go('chat')}>Ask the assistant <ArrowRight className="w-4 h-4" /></Button>}
+      />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div key={stat.label} className="stat-card">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  <p className="text-2xl font-bold mt-1 number-tabular">{stat.value}</p>
-                </div>
-                <div className={`p-2 rounded-lg bg-muted ${stat.color}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-1 text-sm">
-                <span className={stat.positive ? 'text-success' : 'text-warning'}>
-                  {stat.change}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Tax Regime Comparison */}
-      {taxCalculation && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="stat-card">
-            <h3 className="text-lg font-semibold mb-4">Tax Regime Comparison</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
-                <div>
-                  <p className="font-medium">Old Regime</p>
-                  <p className="text-sm text-muted-foreground">With deductions</p>
-                </div>
-                <p className="text-xl font-bold number-tabular">{formatCurrency(taxCalculation.taxOldRegime)}</p>
-              </div>
-              <div className="flex justify-between items-center p-4 rounded-lg bg-accent/10 border-2 border-accent">
-                <div>
-                  <p className="font-medium">New Regime</p>
-                  <p className="text-sm text-accent">Recommended</p>
-                </div>
-                <p className="text-xl font-bold number-tabular text-accent">{formatCurrency(taxCalculation.taxNewRegime)}</p>
-              </div>
-              <div className="flex justify-between items-center p-3 rounded-lg bg-success/10">
-                <p className="font-medium text-success">Potential Savings</p>
-                <p className="text-lg font-bold text-success">{formatCurrency(taxCalculation.savings)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <h3 className="text-lg font-semibold mb-4">Income Breakdown</h3>
-            <div className="space-y-3">
-              {income.map((inc) => (
-                <div key={inc.id} className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
-                  <div>
-                    <p className="font-medium text-sm">{inc.source}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{inc.type.replace('-', ' ')}</p>
-                  </div>
-                  <p className="font-semibold number-tabular amount-positive">{formatCurrency(inc.amount)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+      {mode === 'demo' && (
+        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          <strong className="text-foreground">Demo mode.</strong> Documents were read by the rules baseline and the assistant is scripted. The pipeline, tools, tax engine and checks are the same ones live mode uses. Add an API key to switch to Claude (see <button className="underline" onClick={() => go('architecture')}>How it works</button>).
         </div>
       )}
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Upload Documents', icon: '📄' },
-          { label: 'Review Flags', icon: '⚠️' },
-          { label: 'Chat with AI', icon: '💬' },
-          { label: 'Generate Report', icon: '📊' },
-        ].map((action) => (
-          <button
-            key={action.label}
-            className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 transition-all duration-200 hover:shadow-md text-center group"
-          >
-            <span className="text-2xl mb-2 block group-hover:scale-110 transition-transform">{action.icon}</span>
-            <span className="text-sm font-medium">{action.label}</span>
-          </button>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Stat label="Gross total income" value={inr(rec.grossTotalIncome)} sub="From extracted facts, before deductions" />
+        <Stat label="Recommended regime" value={cmp.recommended === 'old' ? 'Old regime' : 'New regime'} sub={`Saves ${inr(cmp.savings)} vs the other`} tone="accent" />
+        <Stat label={rec.netPayable >= 0 ? 'Tax payable' : 'Refund due'} value={inr(Math.abs(rec.netPayable))} sub={`Liability ${inr(rec.totalTax)} − TDS ${inr(rec.taxesPaid)}`} tone={rec.netPayable >= 0 ? undefined : 'good'} />
+        <Stat label="Open flags" value={String(openFlags.length)} sub={`${high.length} high priority · ${pendingReview} facts unreviewed`} tone={openFlags.length ? 'warn' : 'good'} />
+      </div>
+
+      <div className="stat-card">
+        <h3 className="font-semibold mb-4">Workflow</h3>
+        <ol className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          {steps.map((s, i) => (
+            <li key={s.id}>
+              <button onClick={() => go(s.id)} className="w-full text-left rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors h-full">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {s.done ? <CheckCircle2 className="w-4 h-4 text-success" /> : <Circle className="w-4 h-4" />}
+                  Step {i + 1}
+                </div>
+                <p className="font-medium text-sm mt-1">{s.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{s.detail}</p>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="stat-card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Regime comparison</h3>
+            <button className="text-xs text-accent hover:underline" onClick={() => go('tax')}>Full computation →</button>
+          </div>
+          <div className="space-y-3">
+            {(['old', 'new'] as const).map((r) => (
+              <div key={r} className={cn('flex justify-between items-center p-4 rounded-lg', cmp.recommended === r ? 'bg-accent/10 border-2 border-accent' : 'bg-muted/50')}>
+                <div>
+                  <p className="font-medium">{r === 'old' ? 'Old regime' : 'New regime (default)'}</p>
+                  <p className="text-xs text-muted-foreground">Taxable income {inr(cmp[r].totalIncome)}</p>
+                </div>
+                <p className={cn('text-xl font-bold number-tabular', cmp.recommended === r && 'text-accent')}>{inr(cmp[r].totalTax)}</p>
+              </div>
+            ))}
+          </div>
+          {pendingReview > 0 && <p className="text-xs text-muted-foreground mt-3">Provisional: includes {pendingReview} facts not yet reviewed.</p>}
+        </div>
+
+        <div className="stat-card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Needs attention</h3>
+            <button className="text-xs text-accent hover:underline" onClick={() => go('flags')}>All flags →</button>
+          </div>
+          {openFlags.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nothing open. Ready for the working paper.</p>
+          ) : (
+            <ul className="space-y-3">
+              {openFlags.slice(0, 5).map((f) => (
+                <li key={f.id} className="flex items-start justify-between gap-3 border-b border-border/50 pb-3 last:border-0 last:pb-0">
+                  <p className="text-sm">{f.title}</p>
+                  <PriorityBadge priority={f.priority} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

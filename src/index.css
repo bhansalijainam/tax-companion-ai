@@ -235,3 +235,25 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+}
+
+/* Markdown answers from the assistant */
+.prose-chat p { margin: 0.35rem 0; }
+.prose-chat ul, .prose-chat ol { margin: 0.35rem 0; padding-left: 1.25rem; }
+.prose-chat ul { list-style: disc; }
+.prose-chat ol { list-style: decimal; }
+.prose-chat li { margin: 0.15rem 0; }
+.prose-chat table { border-collapse: collapse; margin: 0.5rem 0; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.prose-chat th, .prose-chat td { border: 1px solid hsl(var(--border)); padding: 0.25rem 0.6rem; text-align: left; }
+.prose-chat th { background: hsl(var(--muted)); font-weight: 600; }
+.prose-chat strong { font-weight: 600; }
+.prose-chat code { font-size: 0.8em; background: hsl(var(--muted)); padding: 0.05rem 0.3rem; border-radius: 4px; }
+
+@media print {
+  aside, header, .print\:hidden { display: none !important; }
+  main { padding: 0 !important; }
+}
