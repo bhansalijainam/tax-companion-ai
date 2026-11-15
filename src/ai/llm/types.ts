@@ -83,6 +83,8 @@ export class LLMError extends Error {
     message: string,
     readonly kind: 'auth' | 'rate_limit' | 'bad_request' | 'overloaded' | 'refusal' | 'network' | 'unknown',
     readonly retryable: boolean,
+    /** Provider detail for server logs only — never sent to the client */
+    readonly detail?: string,
   ) {
     super(message);
     this.name = 'LLMError';

@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
   Object.assign(process.env, loadEnv(mode, process.cwd(), ""));
   return {
     server: {
-      host: "::",
+      host: "localhost", // dev server only on loopback (vite dev-server advisories); use --host to expose
       port: 8080,
       hmr: { overlay: false },
     },

@@ -20,6 +20,7 @@ const server = http.createServer((req, res) => {
       if (!hasToolResult) { content = [{ type: 'thinking', thinking: '', signature: 'sig' }, { type: 'tool_use', id: 'tu_1', name: 'compute_tax', input: { regime: 'both', overrides: [] } }]; stop = 'tool_use'; }
       else { const r = JSON.parse(last.content[0].content); content = [{ type: 'text', text: `Old regime: ₹${r.old.totalTax.toLocaleString('en-IN')}. Also ₹99,999.` }]; }
     }
+    if (j.messages?.[0]?.content?.[0]?.text === 'BAD') { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: 'internal-provider-detail-xyz' } })); }
     if (j.messages?.[0]?.content?.[0]?.text === 'FAIL') { res.writeHead(429, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ type: 'error', error: { type: 'rate_limit_error', message: 'slow down' } })); }
     res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ ...base, content, stop_reason: stop }));
   });
@@ -44,6 +45,19 @@ server.listen(0, async () => {
   console.log('rate limit →', fail.status, await fail.json());
   const bad = await h.handleChat(new Request('http://x/api/chat', { method: 'POST', body: '{"nope":1}' }));
   console.log('bad body →', bad.status);
+  const leak = await h.handleChat(new Request('http://x/api/chat', { method: 'POST', body: JSON.stringify({ message: 'BAD', history: [], caseFile: buildSampleCase() }) }));
+  const leakBody = await leak.text();
+  console.log('provider 400 →', leak.status, leakBody);
+  assert.equal(leak.status, 400);
+  assert.ok(!leakBody.includes('internal-provider-detail-xyz'), 'provider error detail must not reach the client');
+
+  const r = new Request('http://x/api/chat', { method: 'POST', headers: { 'x-forwarded-for': '203.0.113.9' } });
+  const t0 = 1_000_000;
+  const limited = Array.from({ length: 31 }, (_, i) => h.rateLimited(r, t0 + i));
+  assert.equal(limited.slice(0, 30).some(Boolean), false);
+  assert.equal(limited[30], true, '31st request in a minute is limited');
+  assert.equal(h.rateLimited(r, t0 + 61_000), false, 'window slides after a minute');
+
   assert.equal(ex.status, 200);
   assert.deepEqual(applied.facts.map((f: any) => f.grounded), [true, false], 'fabricated citation must fail grounding');
   assert.equal(ch.status, 200);
