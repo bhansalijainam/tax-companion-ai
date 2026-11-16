@@ -14,7 +14,7 @@ function Trace({ result, recommended }: { result: TaxResult; recommended: boolea
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold">{result.regime === 'old' ? 'Old regime' : 'New regime (s.115BAC)'}</h3>
         {recommended && (
-          <span className="section-badge bg-accent/15 text-accent"><CheckCircle className="w-3 h-3 mr-1" /> Lower tax</span>
+          <span className="section-badge bg-accent/10 text-accent"><CheckCircle className="w-3 h-3 mr-1" /> Lower tax</span>
         )}
       </div>
       <table className="w-full text-sm">

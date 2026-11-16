@@ -40,9 +40,10 @@ export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
   ];
 
   return (
+    <div className="hidden md:block bg-sidebar flex-shrink-0">
     <aside
       className={cn(
-        'hidden md:flex h-screen sticky top-0 bg-sidebar text-sidebar-foreground flex-col transition-all duration-300 border-r border-sidebar-border',
+        'flex h-screen sticky top-0 bg-sidebar text-sidebar-foreground flex-col transition-all duration-300 border-r border-sidebar-border',
         collapsed ? 'w-16' : 'w-60',
       )}
     >
@@ -70,7 +71,7 @@ export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
       <nav className="flex-1 py-4 px-2 space-y-5 overflow-y-auto">
         {groups.map((g) => (
           <div key={g.title} className="space-y-1">
-            {!collapsed && <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">{g.title}</p>}
+            {!collapsed && <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/75">{g.title}</p>}
             {g.items.map((item) => {
               const Icon = item.icon;
               const isActive = activeSection === item.id;
@@ -89,7 +90,7 @@ export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
                   <Icon className="w-[18px] h-[18px] flex-shrink-0" />
                   {!collapsed && <span className="text-sm font-medium truncate flex-1 text-left">{item.label}</span>}
                   {!collapsed && item.badge !== undefined && (
-                    <span className={cn('text-[10px] rounded-full px-1.5 py-0.5 tabular-nums', isActive ? 'bg-white/20' : 'bg-sidebar-accent')}>{item.badge}</span>
+                    <span className={cn('text-[10px] rounded-full px-1.5 py-0.5 tabular-nums', isActive ? 'bg-sidebar-primary-foreground text-sidebar-primary' : 'bg-sidebar-accent')}>{item.badge}</span>
                   )}
                 </button>
               );
@@ -105,5 +106,6 @@ export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
         </div>
       )}
     </aside>
+    </div>
   );
 }

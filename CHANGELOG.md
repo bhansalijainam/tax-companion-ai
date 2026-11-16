@@ -2,6 +2,11 @@
 
 ## 0.2.0
 
+### Design
+- New "Ledger & Saffron" theme (Theme Factory, custom): ink-indigo, saffron, warm paper; Fraunces headings, Inter body, tabular numbers. Spec in `docs/design/THEME.md`.
+- Light/dark toggle (follows the system by default).
+- Automated contrast audit in a real browser: every visible text node on all 9 views passes WCAG AA in both themes.
+
 ### Added
 - Hybrid extractor (regex first, LLM on demand) with per-document-type coverage anchors; opt-in via `EXTRACTION_STRATEGY=hybrid`. Routing is measured on every eval run: 9/14 documents need no LLM call.
 - `npm run evals -- --extractor hybrid` and a cost-routing section on the Evals page.

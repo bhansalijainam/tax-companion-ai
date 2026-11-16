@@ -77,6 +77,7 @@ The baseline is perfect on the layouts it was written for and fails on almost ev
 - [`docs/DESIGN.md`](docs/DESIGN.md): problem framing, premises, approaches considered, decision
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): data flow, failure modes, test plan, trade-offs
 - [`docs/EVALS.md`](docs/EVALS.md): eval method, metrics, how to extend
+- [`docs/design/THEME.md`](docs/design/THEME.md): the Ledger & Saffron theme (palette, type, contrast table)
 - FDE engagement pack, written as if deploying at a 12-person CA firm:
   [discovery](docs/fde/01-discovery.md) · [rollout plan](docs/fde/02-rollout-plan.md) · [runbook](docs/fde/03-runbook.md) · [security & privacy](docs/fde/04-security-privacy.md)
 
