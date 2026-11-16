@@ -9,6 +9,8 @@ export interface ExtractorRun {
   extractor: string;
   latencyMs: number;
   usage?: Usage;
+  /** Set by the hybrid extractor: which path handled the document, and why */
+  route?: { path: 'rules' | 'llm'; reason: string };
 }
 
 export interface Extractor {

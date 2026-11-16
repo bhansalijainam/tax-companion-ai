@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { AppSidebar, MOBILE_NAV, Section } from '@/components/AppSidebar';
+import { AppSidebar } from '@/components/AppSidebar';
+import { MOBILE_NAV, type Section } from '@/components/nav';
 import { ModeIndicator } from '@/components/common';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { DashboardView } from '@/components/views/DashboardView';
 import { DocumentsView } from '@/components/views/DocumentsView';
 import { ReviewView } from '@/components/views/ReviewView';
@@ -64,6 +66,7 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2">
               <ModeIndicator />
+              <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={loadSample} title="Reset to the sample case">
                 <RotateCcw className="w-4 h-4" />
                 <span className="hidden sm:inline">Reset demo</span>

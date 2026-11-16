@@ -15,7 +15,10 @@ PAN, names, employer, salary, bank account fragments, rent and landlord details,
 | Client persistence | Browser localStorage (text and facts; binary uploads are not stored). Fine for a demo; **not acceptable** for real client data on shared machines. |
 | Transport | HTTPS (Vercel). |
 | AuthN/AuthZ | Optional shared `ACCESS_TOKEN` for live endpoints. Not per-user. |
-| Input limits | 4 MB body, 400 KB text, 4,000-character chat message, 40-turn history; zod validation on every request. |
+| Input limits | 4 MB body, 400 KB text, 4,000-character chat message, 40-turn history; zod 4 validation on every request. |
+| Rate limiting | Per-IP sliding window on `/api/extract` and `/api/chat` (`RATE_LIMIT_PER_MIN`, default 30). Per instance only: serverless instances don't share memory, so add the platform firewall or a shared store (e.g. Redis) for public deployments. |
+| Error hygiene | Clients receive generic error messages; provider detail goes to server logs only. |
+| Dependencies | Dependabot weekly; production dependencies have 0 high/critical advisories. Remaining dev-only advisories (vite 5, vitest 3) need major upgrades, tracked separately. |
 | Model tool access | Six read-only tools over the case in the request. No network, file system or write tools. What-if overrides are allow-listed to engine inputs (AIS data can't be overridden). |
 | Output control | Structured outputs for extraction; zod re-validation; citation grounding; figure grounding on answers. |
 | Test data | Fully synthetic. |
@@ -26,7 +29,7 @@ PAN, names, employer, salary, bank account fragments, rent and landlord details,
 |---|---|---|---|
 | Prompt injection via client document | Text in a statement instructs the model | Prompt treats documents as data; read-only tools; schema-bound output; grounding; adversarial eval case | Expand the adversarial split (hidden text, white-on-white PDF layers) |
 | Hallucinated figures reaching a return | Model invents a value | Citation check, confidence cap, CA acceptance, figure check on chat | Partner sampling of accepted facts |
-| Key abuse on a public demo | Anyone calls `/api/*` | `ACCESS_TOKEN`; provider spend limit | Per-user auth, rate limiting per user/IP |
+| Key abuse on a public demo | Anyone calls `/api/*` | `ACCESS_TOKEN` (constant-time); per-IP rate limit; provider spend limit | Per-user auth; shared-store rate limiting |
 | Data leakage via logs | Request bodies logged | Handlers log only unexpected errors, not bodies | Structured logs with PII redaction; log retention policy |
 | Cross-client data mixing | Shared browser | Single case per browser; Reset demo | Server-side tenant/case isolation, RBAC, SSO |
 | Tampering with the audit trail | Client-side state | Audit is informational in the demo | Append-only server audit log, signed working papers |

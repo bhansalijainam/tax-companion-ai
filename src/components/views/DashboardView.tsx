@@ -1,7 +1,8 @@
 import { ArrowRight, CheckCircle2, Circle, FileStack, ListChecks, AlertTriangle, Calculator, FileDown } from 'lucide-react';
 import { useCase } from '@/state/CaseContext';
-import { inr, PageHeader, PriorityBadge, Stat } from '@/components/common';
-import type { Section } from '@/components/AppSidebar';
+import { PageHeader, PriorityBadge, Stat } from '@/components/common';
+import { inr } from '@/lib/formatters';
+import type { Section } from '@/components/nav';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 

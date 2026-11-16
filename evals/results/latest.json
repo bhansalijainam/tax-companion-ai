@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-15T19:00:53.172Z",
+  "generatedAt": "2026-11-15T19:17:10.750Z",
   "extraction": {
     "rules": {
       "system": "rules:v1",
-      "ranAt": "2026-11-15T19:00:53.172Z",
+      "ranAt": "2026-11-15T19:17:10.750Z",
       "overall": {
         "cases": 14,
         "precision": 1,
@@ -310,7 +310,7 @@
   "agent": {
     "scripted": {
       "system": "scripted:scripted-demo",
-      "ranAt": "2026-11-15T19:00:53.172Z",
+      "ranAt": "2026-11-15T19:17:10.750Z",
       "passRate": 1,
       "groundedRate": 1,
       "meanSteps": 1.5,
@@ -328,7 +328,7 @@
             "get_flags"
           ],
           "steps": 2,
-          "latencyMs": 14,
+          "latencyMs": 13,
           "usage": {
             "inputTokens": 0,
             "outputTokens": 0,
@@ -389,7 +389,7 @@
             "deduction_headroom"
           ],
           "steps": 1,
-          "latencyMs": 0,
+          "latencyMs": 1,
           "usage": {
             "inputTokens": 0,
             "outputTokens": 0,
@@ -409,7 +409,7 @@
             "search_documents"
           ],
           "steps": 1,
-          "latencyMs": 1,
+          "latencyMs": 0,
           "usage": {
             "inputTokens": 0,
             "outputTokens": 0,
@@ -440,5 +440,109 @@
         }
       ]
     }
+  },
+  "routing": {
+    "ranAt": "2026-11-15T19:17:10.750Z",
+    "llmShare": 0.35714285714285715,
+    "bySplit": {
+      "template": {
+        "docs": 8,
+        "toLlm": 0
+      },
+      "variant": {
+        "docs": 5,
+        "toLlm": 5
+      },
+      "adversarial": {
+        "docs": 1,
+        "toLlm": 0
+      }
+    },
+    "cases": [
+      {
+        "id": "doc-form16",
+        "split": "template",
+        "path": "rules",
+        "reason": "rules covered all 2 required field group(s) for form16"
+      },
+      {
+        "id": "doc-bank",
+        "split": "template",
+        "path": "rules",
+        "reason": "rules covered all 1 required field group(s) for bank-statement"
+      },
+      {
+        "id": "doc-lic",
+        "split": "template",
+        "path": "rules",
+        "reason": "rules covered all 1 required field group(s) for investment-proof"
+      },
+      {
+        "id": "doc-ppf",
+        "split": "template",
+        "path": "rules",
+        "reason": "rules covered all 1 required field group(s) for investment-proof"
+      },
+      {
+        "id": "doc-health",
+        "split": "template",
+        "path": "rules",
+        "reason": "rules covered all 1 required field group(s) for insurance"
+      },
+      {
+        "id": "doc-homeloan",
+        "split": "template",
+        "path": "rules",
+        "reason": "rules covered all 1 required field group(s) for loan-certificate"
+      },
+      {
+        "id": "doc-capgains",
+        "split": "template",
+        "path": "rules",
+        "reason": "rules covered all 1 required field group(s) for capital-gains"
+      },
+      {
+        "id": "doc-ais",
+        "split": "template",
+        "path": "rules",
+        "reason": "rules covered all 1 required field group(s) for ais"
+      },
+      {
+        "id": "var-form16-tabular",
+        "split": "variant",
+        "path": "llm",
+        "reason": "rules missed required field(s): salary.gross, taxesPaid.tds"
+      },
+      {
+        "id": "var-rent-receipts",
+        "split": "variant",
+        "path": "llm",
+        "reason": "rules missed required field(s): salary.rentPaid"
+      },
+      {
+        "id": "var-fd-certificate",
+        "split": "variant",
+        "path": "llm",
+        "reason": "rules missed required field(s): houseProperty.letOutLoanInterest | houseProperty.selfOccupiedLoanInterest"
+      },
+      {
+        "id": "var-icici-statement",
+        "split": "variant",
+        "path": "llm",
+        "reason": "unrecognised document type (other)"
+      },
+      {
+        "id": "var-nps-elss",
+        "split": "variant",
+        "path": "llm",
+        "reason": "rules missed required field(s): deductions.sec80C | deductions.sec80CCD1B | otherSources.depositInterest"
+      },
+      {
+        "id": "adv-injection",
+        "split": "adversarial",
+        "path": "rules",
+        "reason": "rules covered all 1 required field group(s) for bank-statement"
+      }
+    ]
   }
 }

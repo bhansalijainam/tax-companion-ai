@@ -109,11 +109,13 @@ function toAnthropicMessages(messages: LLMMessage[]): BetaMessageParam[] {
 }
 
 function toLLMError(err: unknown): LLMError {
-  if (err instanceof Anthropic.AuthenticationError) return new LLMError('Invalid or missing API key', 'auth', false);
-  if (err instanceof Anthropic.RateLimitError) return new LLMError('Rate limited by the model provider', 'rate_limit', true);
-  if (err instanceof Anthropic.BadRequestError) return new LLMError(`Bad request: ${err.message}`, 'bad_request', false);
-  if (err instanceof Anthropic.InternalServerError) return new LLMError('Model provider error', 'overloaded', true);
-  if (err instanceof Anthropic.APIConnectionError) return new LLMError('Could not reach the model provider', 'network', true);
-  if (err instanceof Anthropic.APIError) return new LLMError(`Provider error ${err.status}: ${err.message}`, 'unknown', false);
-  return new LLMError(err instanceof Error ? err.message : String(err), 'unknown', false);
+  // Client-facing messages are generic; provider detail goes to `detail` for server logs.
+  const detail = err instanceof Error ? err.message : String(err);
+  if (err instanceof Anthropic.AuthenticationError) return new LLMError('Model provider is not configured correctly', 'auth', false, detail);
+  if (err instanceof Anthropic.RateLimitError) return new LLMError('Rate limited by the model provider', 'rate_limit', true, detail);
+  if (err instanceof Anthropic.BadRequestError) return new LLMError('The model provider rejected the request', 'bad_request', false, detail);
+  if (err instanceof Anthropic.InternalServerError) return new LLMError('Model provider error', 'overloaded', true, detail);
+  if (err instanceof Anthropic.APIConnectionError) return new LLMError('Could not reach the model provider', 'network', true, detail);
+  if (err instanceof Anthropic.APIError) return new LLMError('Model provider error', 'unknown', false, `${err.status}: ${detail}`);
+  return new LLMError('Model call failed', 'unknown', false, detail);
 }

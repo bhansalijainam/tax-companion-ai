@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { useCase } from '@/state/CaseContext';
 import { Switch } from '@/components/ui/switch';
 
-export const inr = (n: number) => (n < 0 ? '−' : '') + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
+import { inr } from '@/lib/formatters';
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: React.ReactNode }) {
   return (
@@ -52,7 +52,7 @@ export function GroundingBadge({ grounded }: { grounded: boolean | null }) {
 
 export function OriginBadge({ origin }: { origin: 'llm' | 'rules' | 'human' }) {
   const map = {
-    llm: { label: 'AI', cls: 'bg-accent/15 text-accent' },
+    llm: { label: 'AI', cls: 'bg-accent/10 text-accent' },
     rules: { label: 'Rules', cls: 'bg-muted text-muted-foreground' },
     human: { label: 'CA', cls: 'bg-primary/10 text-primary' },
   } as const;
@@ -60,7 +60,7 @@ export function OriginBadge({ origin }: { origin: 'llm' | 'rules' | 'human' }) {
 }
 
 export function PriorityBadge({ priority }: { priority: 'high' | 'medium' | 'low' }) {
-  const cls = { high: 'bg-destructive/10 text-destructive', medium: 'bg-warning/15 text-[hsl(30_80%_35%)] dark:text-warning', low: 'bg-muted text-muted-foreground' }[priority];
+  const cls = { high: 'bg-destructive/10 text-destructive', medium: 'bg-warning/10 text-warning', low: 'bg-muted text-muted-foreground' }[priority];
   return <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium capitalize', cls)}>{priority}</span>;
 }
 
@@ -73,7 +73,7 @@ export function ModeIndicator({ compact = false }: { compact?: boolean }) {
       <span
         className={cn(
           'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-          live ? 'bg-accent/15 text-accent' : 'bg-muted text-muted-foreground',
+          live ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground',
         )}
         title={live ? `Live: ${status?.provider} / ${status?.model}` : 'Demo mode: rules extractor + scripted assistant, no API key needed'}
       >
@@ -95,7 +95,7 @@ export function Stat({ label, value, sub, tone }: { label: string; value: string
   return (
     <div className="stat-card">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className={cn('text-2xl font-bold mt-1 number-tabular', toneCls)}>{value}</p>
+      <p className={cn('font-display text-[1.75rem] leading-tight font-semibold mt-1 number-tabular', toneCls)}>{value}</p>
       {sub && <p className="text-xs text-muted-foreground mt-2">{sub}</p>}
     </div>
   );

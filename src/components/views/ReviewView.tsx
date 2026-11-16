@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Check, X, Pencil, Plus, CheckCheck } from 'lucide-react';
 import { useCase } from '@/state/CaseContext';
-import { ConfidenceBar, GroundingBadge, inr, OriginBadge, PageHeader } from '@/components/common';
+import { ConfidenceBar, GroundingBadge, OriginBadge, PageHeader } from '@/components/common';
+import { inr } from '@/lib/formatters';
 import { CONFIDENCE_REVIEW_THRESHOLD } from '@/domain/caseFile';
 import { FACT_FIELDS, FactField, FIELDS } from '@/domain/fields';
 import type { Fact } from '@/domain/types';

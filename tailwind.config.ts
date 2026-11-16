@@ -40,6 +40,7 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        saffron: "hsl(var(--saffron))",
         info: {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
@@ -91,6 +92,7 @@ export default {
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Fraunces", "Georgia", "serif"],
       },
       keyframes: {
         "accordion-down": {

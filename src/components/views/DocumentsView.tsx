@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Upload, FileText, CheckCircle, AlertCircle, Loader2, RefreshCw, Trash2, Eye } from 'lucide-react';
 import { useCase } from '@/state/CaseContext';
 import { PageHeader } from '@/components/common';
-import type { Section } from '@/components/AppSidebar';
+import type { Section } from '@/components/nav';
 import { DOC_KIND_LABEL, type CaseDocument } from '@/domain/types';
 import { formatFileSize } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';

@@ -1,6 +1,7 @@
 import { Printer, AlertTriangle } from 'lucide-react';
 import { useCase } from '@/state/CaseContext';
-import { inr, PageHeader } from '@/components/common';
+import { PageHeader } from '@/components/common';
+import { inr } from '@/lib/formatters';
 import { FIELDS } from '@/domain/fields';
 import { AY, FY } from '@/engine/rules';
 import { Button } from '@/components/ui/button';

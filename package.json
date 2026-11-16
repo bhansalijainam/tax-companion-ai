@@ -1,7 +1,7 @@
 {
   "name": "tax-companion-ai",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "evals": "tsx scripts/run-evals.ts",
     "typecheck": "tsc -p tsconfig.core.json && tsc -p tsconfig.app.json --noEmit",
-    "smoke:live": "tsx scripts/smoke-live-mock.ts"
+    "smoke:live": "tsx scripts/smoke-live-mock.ts",
+    "coverage": "vitest run --coverage --coverage.include=src/engine --coverage.include=src/domain --coverage.include=src/ai --coverage.exclude='**/*.test.ts'"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
@@ -67,7 +68,7 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
-    "zod": "^3.25.76"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
@@ -78,6 +79,7 @@
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
+    "@vitest/coverage-v8": "^3.2.7",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",

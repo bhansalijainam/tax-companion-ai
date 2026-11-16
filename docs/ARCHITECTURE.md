@@ -52,7 +52,9 @@ All state lives in the browser, and the server is stateless. The server receives
 | Safety classifier declines | `stop_reason: refusal` | Server-side fallback (`fallbacks: "default"`); if the whole chain refuses, surfaced as an error |
 | Truncated output | `stop_reason: max_tokens` | Treated as retryable error; never parsed partially |
 | Oversized upload | Body-size check (4 MB) | 400 before any model call |
-| Public deployment abuse | Optional `ACCESS_TOKEN` header | 401; plus provider-side spend limits (runbook) |
+| Public deployment abuse | Optional `ACCESS_TOKEN` header (constant-time compare); per-IP rate limit | 401 / 429; plus provider-side spend limits (runbook) |
+| Provider error detail leaking to clients | `LLMError.detail` | Logged server-side; client gets a generic message |
+| Rules silently missing a field (hybrid mode) | Coverage anchors per document type | Any missing anchor routes the document to the LLM |
 | No API in static hosting | `/api/health` fails or returns non-JSON | Falls back to demo mode automatically |
 
 ## Model usage
@@ -60,6 +62,7 @@ All state lives in the browser, and the server is stateless. The server receives
 - **Extraction**: one call per document, `output_config.format` JSON schema, adaptive thinking at `medium` effort. The system prompt is static, so it is cached across documents.
 - **Assistant**: manual tool loop, kept provider-agnostic on purpose rather than using the SDK tool runner. Strict tool schemas. `tool_choice` stays `auto` because forced tool choice is rejected on current models. Native assistant content (including thinking blocks) is echoed back unchanged within a turn.
 - **Refusals**: `server-side-fallback-2026-07-01` with `fallbacks: "default"`.
+- **Cost routing**: `EXTRACTION_STRATEGY=hybrid` runs rules first and calls the model only when coverage anchors are missing. That is 5 of 14 documents on the eval set.
 - **Model**: `claude-opus-5-5` by default, `LLM_MODEL` to override. Moving extraction to a cheaper model is a cost lever. It should be decided by the eval (see `EVALS.md`), not assumed.
 
 ## Test coverage

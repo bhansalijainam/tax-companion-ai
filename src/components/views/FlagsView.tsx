@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { CheckCircle2, Copy, RotateCcw, XCircle, Bot, Scale, Gauge, ShieldAlert, GitCompare } from 'lucide-react';
 import { useCase } from '@/state/CaseContext';
-import { inr, PageHeader, PriorityBadge } from '@/components/common';
+import { PageHeader, PriorityBadge } from '@/components/common';
+import { inr } from '@/lib/formatters';
 import type { FlagView } from '@/domain/caseFile';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
