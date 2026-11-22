@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Security
+- Dev toolchain majors: vite 5 → 8, vitest 3 → 5 (with `@vitest/coverage-v8` 5), `@vitejs/plugin-react-swc` 3 → 4. Clears the dev-only critical tinypool advisories (GHSA-5gmw-xhrv-c9v3, GHSA-85c8-ppgw-ccpr) and the high vite advisory; `npm audit` now reports 0 high/critical including dev dependencies.
+
+### Changed
+- Vite 8 bundles with Rolldown: the vendor chunk split moved from object-form `manualChunks` (unsupported) to `build.rolldownOptions.output.codeSplitting.groups`, producing the same `react`, `ui` and `markdown` chunks.
+- Config files use `import.meta.dirname` instead of `__dirname`.
+
 ## 0.2.0
 
 ### Design

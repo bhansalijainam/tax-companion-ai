@@ -18,7 +18,7 @@ PAN, names, employer, salary, bank account fragments, rent and landlord details,
 | Input limits | 4 MB body, 400 KB text, 4,000-character chat message, 40-turn history; zod 4 validation on every request. |
 | Rate limiting | Per-IP sliding window on `/api/extract` and `/api/chat` (`RATE_LIMIT_PER_MIN`, default 30). Per instance only: serverless instances don't share memory, so add the platform firewall or a shared store (e.g. Redis) for public deployments. |
 | Error hygiene | Clients receive generic error messages; provider detail goes to server logs only. |
-| Dependencies | Dependabot weekly; production dependencies have 0 high/critical advisories. Remaining dev-only advisories (vite 5, vitest 3) need major upgrades, tracked separately. |
+| Dependencies | Dependabot weekly; `npm audit` (including dev dependencies) reports 0 high/critical advisories after the vite 8 / vitest 5 upgrade. |
 | Model tool access | Six read-only tools over the case in the request. No network, file system or write tools. What-if overrides are allow-listed to engine inputs (AIS data can't be overridden). |
 | Output control | Structured outputs for extraction; zod re-validation; citation grounding; figure grounding on answers. |
 | Test data | Fully synthetic. |

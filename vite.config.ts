@@ -54,19 +54,28 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react(), apiDevServer()],
     build: {
-      rollupOptions: {
+      // Vite 8 bundles with Rolldown: object-form `manualChunks` is unsupported, so the
+      // vendor split is expressed as code-splitting groups. Each group matches the listed
+      // packages and (by default) pulls in their dependencies; higher priority wins.
+      rolldownOptions: {
         output: {
-          manualChunks: {
-            react: ["react", "react-dom", "react-router-dom"],
-            ui: ["@radix-ui/react-dialog", "@radix-ui/react-select", "@radix-ui/react-collapsible", "@radix-ui/react-switch", "lucide-react", "sonner"],
-            markdown: ["react-markdown", "remark-gfm"],
+          codeSplitting: {
+            groups: [
+              { name: "react", priority: 30, test: /[\\/]node_modules[\\/](react|react-dom|react-router-dom)[\\/]/ },
+              {
+                name: "ui",
+                priority: 20,
+                test: /[\\/]node_modules[\\/](@radix-ui[\\/]react-(dialog|select|collapsible|switch)|lucide-react|sonner)[\\/]/,
+              },
+              { name: "markdown", priority: 10, test: /[\\/]node_modules[\\/](react-markdown|remark-gfm)[\\/]/ },
+            ],
           },
         },
       },
     },
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./src"),
+        "@": path.resolve(import.meta.dirname, "./src"),
       },
     },
   };
