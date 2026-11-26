@@ -106,10 +106,12 @@ npm run db:migrate && npm run smoke:live && npm run evals && npm run build
 
 ## Acceptance
 
-- [ ] Two firms in the same deployment cannot see each other's clients, cases, documents or audit events (automated test + manual check)
-- [ ] A case edited by one member is visible to another member after reload; concurrent edits produce a conflict, not data loss
-- [ ] Only partners can finalise; finalised cases are read-only until reopened (audited)
-- [ ] Public demo at `/` works exactly as before with no sign-in
-- [ ] All tasks complete; validation passes; patterns mirrored, not reinvented
+- [x] Two firms in the same deployment cannot see each other's clients, cases or audit events (repo + HTTP tests against Postgres; browser check with two firms). *Documents: pending Task 7.*
+- [x] A case edited by one member is visible to another member after reload; concurrent edits produce a conflict, not data loss
+- [x] Only partners can finalise; finalised cases are read-only until reopened (audited)
+- [x] Public demo at `/` works exactly as before with no sign-in
+- [ ] All tasks complete: Tasks 2–6 and 8 done. Task 1 decided (ADR 0001), and Neon provisioning waits on Vercel team access. Task 7 (private Blob for binaries) waits on Blob provisioning.
 
-**WAITING FOR CONFIRMATION**: proceed with this plan? (yes / modify / different approach)
+## Status (2026-11-26)
+
+Confirmed by user ("proceed with milestone 1"). Code complete except Task 7. 83 tests pass (16 new server tests against Postgres + 6 store tests). An end-to-end browser run covers sign-up → firm → client → edit → reload → final, plus a second firm being blocked.

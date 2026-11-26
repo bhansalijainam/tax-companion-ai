@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.0 — Practice workspace (PRD milestone 1)
+
+### Added
+- Firm accounts with sign-in (Better Auth, data in our own Postgres): firms, partner/preparer roles, invitation links.
+- Client list at `/app` with search, status and masked PAN; a server-saved case per client and financial year.
+- Case saves with optimistic concurrency: a stale save gets a conflict message and a reload button, never a silent overwrite.
+- Append-only audit trail enforced by a database trigger; client-side audit entries are stored as server rows attributed to the signed-in member.
+- Partner-only **Mark final** / **Reopen**; final cases are read-only on the server.
+- Paid AI routes require a signed-in firm member when the workspace is configured; the public demo at `/` stays login-free and scripted.
+- `npm run db:migrate` (idempotent); CI runs tenant-isolation tests against Postgres.
+- ADR 0001 (database and sign-in), product brief, PRD, capability contract and M1 plan under `docs/` and `.claude/`.
+
+### Changed
+- TypeScript 5.9 and typescript-eslint 8.74 (required by Better Auth 1.7).
+- Case persistence goes through a `CaseStore` interface: browser storage for the demo, the API for firms.
+
+### Notes
+- `npm audit --omit=dev` now lists vitest/vite/tinypool (dev tools) because Better Auth declares vitest as an optional peer. No runtime code imports them; the tracked vite/vitest upgrade clears them.
+
+### Not yet
+- Uploaded PDFs and images are not stored server-side yet (Vercel Blob is pending provisioning). Text documents and all facts are saved.
+
 ## 0.2.0
 
 ### Design

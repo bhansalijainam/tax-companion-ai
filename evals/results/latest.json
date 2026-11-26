@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-15T19:17:10.750Z",
+  "generatedAt": "2026-11-26T20:49:11.924Z",
   "extraction": {
     "rules": {
       "system": "rules:v1",
-      "ranAt": "2026-11-15T19:17:10.750Z",
+      "ranAt": "2026-11-26T20:49:11.924Z",
       "overall": {
         "cases": 14,
         "precision": 1,
@@ -310,7 +310,7 @@
   "agent": {
     "scripted": {
       "system": "scripted:scripted-demo",
-      "ranAt": "2026-11-15T19:17:10.750Z",
+      "ranAt": "2026-11-26T20:49:11.924Z",
       "passRate": 1,
       "groundedRate": 1,
       "meanSteps": 1.5,
@@ -328,7 +328,7 @@
             "get_flags"
           ],
           "steps": 2,
-          "latencyMs": 13,
+          "latencyMs": 16,
           "usage": {
             "inputTokens": 0,
             "outputTokens": 0,
@@ -389,7 +389,7 @@
             "deduction_headroom"
           ],
           "steps": 1,
-          "latencyMs": 1,
+          "latencyMs": 0,
           "usage": {
             "inputTokens": 0,
             "outputTokens": 0,
@@ -409,7 +409,7 @@
             "search_documents"
           ],
           "steps": 1,
-          "latencyMs": 0,
+          "latencyMs": 3,
           "usage": {
             "inputTokens": 0,
             "outputTokens": 0,
@@ -442,7 +442,7 @@
     }
   },
   "routing": {
-    "ranAt": "2026-11-15T19:17:10.750Z",
+    "ranAt": "2026-11-26T20:49:11.924Z",
     "llmShare": 0.35714285714285715,
     "bySplit": {
       "template": {

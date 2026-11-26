@@ -14,11 +14,13 @@ PAN, names, employer, salary, bank account fragments, rent and landlord details,
 | Server persistence | None. Handlers are stateless; nothing is written server-side. |
 | Client persistence | Browser localStorage (text and facts; binary uploads are not stored). Fine for a demo; **not acceptable** for real client data on shared machines. |
 | Transport | HTTPS (Vercel). |
-| AuthN/AuthZ | Optional shared `ACCESS_TOKEN` for live endpoints. Not per-user. |
+| AuthN/AuthZ | Practice workspace: per-user sign-in (Better Auth, httpOnly session cookies, origin checks, rate-limited auth endpoints). Firm membership and role are resolved on the server for every request. The firm id is never taken from the request. Partners alone can finalise or reopen cases. The demo-only deployment keeps the optional shared `ACCESS_TOKEN`. |
+| Tenant isolation | One data-access module (`server/db/repo.ts`) requires the firm on every query. Other firms' resources return 404. Tested at repo and HTTP level against Postgres in CI, including a check that the tests fail if the firm filter is removed. |
+| Audit integrity | Database trigger refuses UPDATE/DELETE on `audit_events`. Rows go only when their case is deleted (retention / deletion request). Saves that rewrite earlier history are rejected. |
 | Input limits | 4 MB body, 400 KB text, 4,000-character chat message, 40-turn history; zod 4 validation on every request. |
 | Rate limiting | Per-IP sliding window on `/api/extract` and `/api/chat` (`RATE_LIMIT_PER_MIN`, default 30). Per instance only: serverless instances don't share memory, so add the platform firewall or a shared store (e.g. Redis) for public deployments. |
 | Error hygiene | Clients receive generic error messages; provider detail goes to server logs only. |
-| Dependencies | Dependabot weekly; production dependencies have 0 high/critical advisories. Remaining dev-only advisories (vite 5, vitest 3) need major upgrades, tracked separately. |
+| Dependencies | Dependabot weekly. Runtime dependencies have no high/critical advisories. `npm audit --omit=dev` also reports vitest/vite/tinypool, because Better Auth declares vitest as an optional peer for its test helpers. Nothing at runtime imports them (`better-auth/test` is unused). Fixed by the tracked vite 5→8 / vitest 3→5 upgrade. |
 | Model tool access | Six read-only tools over the case in the request. No network, file system or write tools. What-if overrides are allow-listed to engine inputs (AIS data can't be overridden). |
 | Output control | Structured outputs for extraction; zod re-validation; citation grounding; figure grounding on answers. |
 | Test data | Fully synthetic. |

@@ -49,7 +49,7 @@ We'll know we're right when **a pilot firm runs ≥30 real client cases through 
 
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
-| 1 | Practice workspace | A firm signs in, sees its client list, opens or creates a case, and every change is saved on the server with an audit trail | in-progress | `.claude/plans/practice-workspace.plan.md` |
+| 1 | Practice workspace | A firm signs in, sees its client list, opens or creates a case, and every change is saved on the server with an audit trail | in-progress (code complete; production provisioning + document storage pending) | `.claude/plans/practice-workspace.plan.md` |
 | 2 | Correction → eval flywheel | Each CA edit/reject/add becomes a firm-private eval case; the firm sees its own extraction accuracy over time | pending | — |
 | 3 | FY 2025-26 rules | Engine computes AY 2026-27 correctly with tests; each case picks its year | pending | — |
 | 4 | Pilot with founder's CA contacts | One firm runs real clients in shadow mode, then assisted mode | pending | — |
