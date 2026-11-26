@@ -3,6 +3,7 @@
  * invitations) and the workspace schema. Idempotent.
  *
  *   npm run db:migrate        # uses DATABASE_URL (loads .env.local if present)
+ *   npm run vercel-build      # Vercel: migrate if a database is configured, then build
  */
 import { getMigrations } from 'better-auth/db/migration';
 import { Pool } from 'pg';
@@ -25,6 +26,11 @@ if (isMain) {
   try { process.loadEnvFile('.env.local'); } catch { /* optional */ }
   const url = process.env.DATABASE_URL;
   if (!url) {
+    // On Vercel builds without a database (demo-only deployments) this is a no-op
+    if (process.argv.includes('--if-configured')) {
+      console.log('No DATABASE_URL: skipping migrations (demo-only deployment).');
+      process.exit(0);
+    }
     console.error('DATABASE_URL is not set.');
     process.exit(1);
   }
