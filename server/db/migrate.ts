@@ -8,6 +8,7 @@
 import { getMigrations } from 'better-auth/db/migration';
 import { Pool } from 'pg';
 import { authOptions } from '../auth';
+import { migrationUrl, poolConfig } from './pool';
 import { SCHEMA_SQL } from './schema';
 
 export async function applySchema(pool: Pool): Promise<void> {
@@ -24,17 +25,17 @@ export async function migrateAll(pool: Pool): Promise<{ authTablesCreated: strin
 const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'));
 if (isMain) {
   try { process.loadEnvFile('.env.local'); } catch { /* optional */ }
-  const url = process.env.DATABASE_URL;
+  const url = migrationUrl();
   if (!url) {
     // On Vercel builds without a database (demo-only deployments) this is a no-op
     if (process.argv.includes('--if-configured')) {
-      console.log('No DATABASE_URL: skipping migrations (demo-only deployment).');
+      console.log('No database configured: skipping migrations (demo-only deployment).');
       process.exit(0);
     }
-    console.error('DATABASE_URL is not set.');
+    console.error('No database configured: set DATABASE_URL (Neon) or POSTGRES_URL_NON_POOLING (Supabase).');
     process.exit(1);
   }
-  const pool = new Pool({ connectionString: url });
+  const pool = new Pool(poolConfig(url));
   migrateAll(pool)
     .then((r) => console.log(`Migrated. Auth tables created this run: ${r.authTablesCreated.join(', ') || 'none'}`))
     .catch((e) => { console.error(e); process.exitCode = 1; })

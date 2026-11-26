@@ -6,7 +6,7 @@
 
 ## Decision
 
-- **Database: Postgres, provisioned as Neon through the Vercel Marketplace.** This is the preferred storage path for Vercel projects: provisioning sets `DATABASE_URL` on the project. The code uses the standard `pg` driver and plain SQL, so nothing is tied to Neon. Local development and CI use stock Postgres 16.
+- **Database: Postgres from the Vercel Marketplace: Neon (default) or Supabase (used as plain Postgres only).** Both work unchanged. `server/db/pool.ts` reads either provider's env names (`DATABASE_URL[_POOLED]` or `POSTGRES_URL[_NON_POOLING]`), runs migrations on the direct connection, and keeps TLS verified, taking a provider CA from `DATABASE_SSL_CA` when needed (Supabase). Supabase is attractive for its Mumbai region if pilot firms want client data kept in India. This is the preferred storage path for Vercel projects: provisioning sets `DATABASE_URL` on the project. The code uses the standard `pg` driver and plain SQL, so nothing is tied to Neon. Local development and CI use stock Postgres 16.
 - **Sign-in: Better Auth**, self-hosted in our own handlers, with users, sessions, firms (organizations), members and invitations in the same Postgres. Its organization plugin provides firms, roles and invitations.
 - **Documents: Vercel Blob (private)**, deferred until the store can be provisioned (see the M1 plan, Task 7).
 
@@ -15,7 +15,7 @@
 | Option | Why not (for now) |
 |---|---|
 | Clerk (native Marketplace) | Its SDKs and examples are centred on Next.js, while this app is a Vite SPA with Web-standard handlers. It would also put client-firm identities with another processor, which adds a party to the DPDP review. A good choice if the app moves to Next.js. |
-| Supabase (DB + auth) | Couples storage and auth to one vendor's client. Our repo layer and isolation tests would need its row-level-security model instead of one audited module. |
+| Supabase **auth + RLS** | Couples storage and auth to one vendor's client; isolation would move from one tested module to row-level-security policies. (Supabase **as Postgres** is supported, see above.) |
 | Hand-written auth | Password hashing, sessions, CSRF and invitations are solved problems. Writing them ourselves would be the riskiest code in the product. |
 
 ## Consequences
