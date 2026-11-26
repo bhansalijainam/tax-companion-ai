@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { SAMPLE_DOCUMENTS } from '../../fixtures/sampleDocuments';
-import { amountOnLine, detectKind, rulesExtract } from './rulesExtractor';
-import { checkGrounding, finalizeExtraction } from './grounding';
-import { ExtractionOutput, extractionJsonSchema } from './schema';
+import { SAMPLE_DOCUMENTS } from '../../fixtures/sampleDocuments.js';
+import { amountOnLine, detectKind, rulesExtract } from './rulesExtractor.js';
+import { checkGrounding, finalizeExtraction } from './grounding.js';
+import { ExtractionOutput, extractionJsonSchema } from './schema.js';
 
 const doc = (id: string) => SAMPLE_DOCUMENTS.find((d) => d.id === id)!;
 

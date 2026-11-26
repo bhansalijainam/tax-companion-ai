@@ -16,7 +16,8 @@
     "smoke:live": "tsx scripts/smoke-live-mock.ts",
     "coverage": "vitest run --coverage --coverage.include=src/engine --coverage.include=src/domain --coverage.include=src/ai --coverage.exclude='**/*.test.ts'",
     "db:migrate": "tsx server/db/migrate.ts",
-    "vercel-build": "tsx server/db/migrate.ts --if-configured && vite build"
+    "vercel-build": "tsx server/db/migrate.ts --if-configured && vite build",
+    "check:functions": "node scripts/check-vercel-functions.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",

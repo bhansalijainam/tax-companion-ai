@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { FACT_FIELDS } from '../src/domain/fields';
-import type { CaseFile } from '../src/domain/types';
+import { FACT_FIELDS } from '../src/domain/fields.js';
+import type { CaseFile } from '../src/domain/types.js';
 
 const DOC_KINDS = ['form16', 'bank-statement', 'investment-proof', 'insurance', 'loan-certificate', 'capital-gains', 'ais', 'rent-receipt', 'other'] as const;
 const str = (max: number) => z.string().max(max);

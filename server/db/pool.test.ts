@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { databaseUrl, migrationUrl, poolConfig } from './pool';
+import { databaseUrl, migrationUrl, poolConfig } from './pool.js';
 
 describe('database URL selection', () => {
   it('supports Neon / Prisma names, pooled first at runtime', () => {

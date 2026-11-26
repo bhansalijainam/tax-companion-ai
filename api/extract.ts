@@ -1,5 +1,5 @@
 // Vercel serverless function — see server/handlers.ts
-import { handleExtract } from '../server/handlers';
+import { handleExtract } from '../server/handlers.js';
 
 export const config = { maxDuration: 60 };
 

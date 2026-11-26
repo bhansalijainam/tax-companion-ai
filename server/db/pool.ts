@@ -1,4 +1,7 @@
-import { Pool, type PoolConfig } from 'pg';
+import pg, { type PoolConfig } from 'pg';
+
+const { Pool } = pg;
+type Pool = pg.Pool;
 
 /**
  * Database connection for the practice workspace. Works with any Postgres from the

@@ -6,10 +6,13 @@
  *   npm run vercel-build      # Vercel: migrate if a database is configured, then build
  */
 import { getMigrations } from 'better-auth/db/migration';
-import { Pool } from 'pg';
-import { authOptions } from '../auth';
-import { migrationUrl, poolConfig } from './pool';
-import { SCHEMA_SQL } from './schema';
+import pg from 'pg';
+
+const { Pool } = pg;
+type Pool = pg.Pool;
+import { authOptions } from '../auth.js';
+import { migrationUrl, poolConfig } from './pool.js';
+import { SCHEMA_SQL } from './schema.js';
 
 export async function applySchema(pool: Pool): Promise<void> {
   await pool.query(SCHEMA_SQL);

@@ -1,5 +1,5 @@
 // Vercel serverless function — see server/handlers.ts
-import { handleChat } from '../server/handlers';
+import { handleChat } from '../server/handlers.js';
 
 export const config = { maxDuration: 60 };
 

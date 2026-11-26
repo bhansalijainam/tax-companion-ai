@@ -1,8 +1,8 @@
-import { compareRegimes } from '../engine/compute';
-import { DEDUCTION_CAPS } from '../engine/rules';
-import { emptyInputs, TaxInputs } from '../engine/types';
-import { FactField, FIELDS } from './fields';
-import type { CaseFile, Fact, Flag, FlagState } from './types';
+import { compareRegimes } from '../engine/compute.js';
+import { DEDUCTION_CAPS } from '../engine/rules.js';
+import { emptyInputs, TaxInputs } from '../engine/types.js';
+import { FactField, FIELDS } from './fields.js';
+import type { CaseFile, Fact, Flag, FlagState } from './types.js';
 
 export const CONFIDENCE_REVIEW_THRESHOLD = 0.8;
 /** Cash deposits above this get a "confirm source" flag (unexplained credits: s.68/69) */

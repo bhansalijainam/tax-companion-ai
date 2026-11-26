@@ -1,5 +1,5 @@
-import * as R from '../../engine/rules';
-import { numbersIn } from '../extraction/grounding';
+import * as R from '../../engine/rules.js';
+import { numbersIn } from '../extraction/grounding.js';
 
 /** Statutory constants the assistant may quote without a tool call. */
 const STATUTORY = new Set<number>([

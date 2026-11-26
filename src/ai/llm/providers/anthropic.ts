@@ -4,7 +4,7 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import type { BetaContentBlock, BetaContentBlockParam, BetaMessageParam, BetaToolUnion } from '@anthropic-ai/sdk/resources/beta/messages/messages';
-import { CompletionRequest, CompletionResponse, LLMError, LLMMessage, LLMProvider } from '../types';
+import { CompletionRequest, CompletionResponse, LLMError, LLMMessage, LLMProvider } from '../types.js';
 
 export const DEFAULT_ANTHROPIC_MODEL = 'claude-opus-5-5';
 

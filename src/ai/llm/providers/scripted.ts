@@ -4,7 +4,7 @@
  * "reasoning" is a keyword router and the prose comes from templates.
  * The UI labels every answer from this provider as scripted.
  */
-import type { CompletionRequest, CompletionResponse, LLMMessage, LLMProvider, ToolCall } from '../types';
+import type { CompletionRequest, CompletionResponse, LLMMessage, LLMProvider, ToolCall } from '../types.js';
 
 const inr = (n: number) => (n < 0 ? '−' : '') + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
 const SECTION_FIELDS: [RegExp, string, string][] = [

@@ -5,10 +5,13 @@
  * run against a real Postgres: set TEST_DATABASE_URL (CI provides one).
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { Pool } from 'pg';
-import { applySchema } from './migrate';
-import { ConflictError, LockedError, NotFoundError, Repo } from './repo';
-import { emptyCase } from '../../src/ai/pipeline';
+import pg from 'pg';
+
+const { Pool } = pg;
+type Pool = pg.Pool;
+import { applySchema } from './migrate.js';
+import { ConflictError, LockedError, NotFoundError, Repo } from './repo.js';
+import { emptyCase } from '../../src/ai/pipeline.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const d = url ? describe : describe.skip;

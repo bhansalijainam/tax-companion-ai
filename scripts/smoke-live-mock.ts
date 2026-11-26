@@ -28,9 +28,9 @@ const server = http.createServer((req, res) => {
 server.listen(0, async () => {
   const port = (server.address() as any).port;
   process.env.ANTHROPIC_BASE_URL = `http://127.0.0.1:${port}`; process.env.ANTHROPIC_API_KEY = 'test-key';
-  const h = await import('../server/handlers');
-  const { buildSampleCase } = await import('../src/ai/pipeline');
-  const { applyExtraction } = await import('../src/ai/pipeline');
+  const h = await import('../server/handlers.js');
+  const { buildSampleCase } = await import('../src/ai/pipeline.js');
+  const { applyExtraction } = await import('../src/ai/pipeline.js');
   console.log('health', await (await h.handleHealth()).json());
   const text = 'KOTAK\nTotal savings interest credited: Rs. 9,870';
   const ex = await h.handleExtract(new Request('http://x/api/extract', { method: 'POST', body: JSON.stringify({ document: { name: 'k.txt', mimeType: 'text/plain', text } }) }));

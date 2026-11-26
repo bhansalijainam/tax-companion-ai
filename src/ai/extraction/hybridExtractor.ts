@@ -9,11 +9,11 @@
  * The coverage check is deliberately strict. A partial rules extraction that silently
  * misses a field is worse than an LLM call, so any missing anchor routes to the LLM.
  */
-import type { FactField } from '../../domain/fields';
-import type { CaseDocument, DocKind } from '../../domain/types';
-import type { Extractor, ExtractorRun } from './llmExtractor';
-import { rulesExtract } from './rulesExtractor';
-import type { ExtractionOutput } from './schema';
+import type { FactField } from '../../domain/fields.js';
+import type { CaseDocument, DocKind } from '../../domain/types.js';
+import type { Extractor, ExtractorRun } from './llmExtractor.js';
+import { rulesExtract } from './rulesExtractor.js';
+import type { ExtractionOutput } from './schema.js';
 
 /**
  * Fields a complete extraction of each document type must include (any one of a group).

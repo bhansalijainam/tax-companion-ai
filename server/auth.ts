@@ -7,8 +7,8 @@
 import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import { organization } from 'better-auth/plugins/organization';
 import type { Pool } from 'pg';
-import type { Role } from './db/repo';
-import { getPool } from './db/pool';
+import type { Role } from './db/repo.js';
+import { getPool } from './db/pool.js';
 
 export function authOptions(pool: Pool): BetterAuthOptions {
   return {

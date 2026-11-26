@@ -4,9 +4,12 @@
  * creation against Postgres, then the workspace API exercised with session cookies.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { Pool } from 'pg';
-import { migrateAll } from './db/migrate';
-import { routeWorkspace } from './workspace';
+import pg from 'pg';
+
+const { Pool } = pg;
+type Pool = pg.Pool;
+import { migrateAll } from './db/migrate.js';
+import { routeWorkspace } from './workspace.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const d = url ? describe : describe.skip;

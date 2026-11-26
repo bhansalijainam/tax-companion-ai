@@ -6,9 +6,9 @@
  * issuers, plus one adversarial document; they measure generalisation.
  * Gold labels were written by hand from the document text, not from any extractor's output.
  */
-import { SAMPLE_DOCUMENTS } from '../../src/fixtures/sampleDocuments';
-import type { FactField } from '../../src/domain/fields';
-import type { DocKind } from '../../src/domain/types';
+import { SAMPLE_DOCUMENTS } from '../../src/fixtures/sampleDocuments.js';
+import type { FactField } from '../../src/domain/fields.js';
+import type { DocKind } from '../../src/domain/types.js';
 
 export interface GoldFact {
   field: FactField;

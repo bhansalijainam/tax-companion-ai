@@ -2,11 +2,11 @@
  * Browser-side AI service. Talks to the server in live mode; runs the same pipeline
  * locally (rules extractor + scripted provider) in demo mode.
  */
-import type { CaseDocument, CaseFile } from '../domain/types';
-import { runAgent, type AgentResult, type ChatTurn } from './agent/runAgent';
-import type { ExtractorRun } from './extraction/llmExtractor';
-import { RulesExtractor } from './extraction/rulesExtractor';
-import { ScriptedProvider } from './llm/providers/scripted';
+import type { CaseDocument, CaseFile } from '../domain/types.js';
+import { runAgent, type AgentResult, type ChatTurn } from './agent/runAgent.js';
+import type { ExtractorRun } from './extraction/llmExtractor.js';
+import { RulesExtractor } from './extraction/rulesExtractor.js';
+import { ScriptedProvider } from './llm/providers/scripted.js';
 
 export interface LiveStatus {
   live: boolean;

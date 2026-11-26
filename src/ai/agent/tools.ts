@@ -1,9 +1,9 @@
-import { buildInputs, caseSummary, deriveFlags, fieldValue } from '../../domain/caseFile';
-import { FACT_FIELDS, FactField, FIELDS } from '../../domain/fields';
-import type { CaseFile } from '../../domain/types';
-import { compareRegimes, deductionHeadroom, oldRegimeBreakEven } from '../../engine/compute';
-import type { TaxInputs, TaxResult } from '../../engine/types';
-import type { ToolSpec } from '../llm/types';
+import { buildInputs, caseSummary, deriveFlags, fieldValue } from '../../domain/caseFile.js';
+import { FACT_FIELDS, FactField, FIELDS } from '../../domain/fields.js';
+import type { CaseFile } from '../../domain/types.js';
+import { compareRegimes, deductionHeadroom, oldRegimeBreakEven } from '../../engine/compute.js';
+import type { TaxInputs, TaxResult } from '../../engine/types.js';
+import type { ToolSpec } from '../llm/types.js';
 
 /** Fields a what-if may override: numeric engine inputs only. */
 export const OVERRIDABLE_FIELDS = FACT_FIELDS.filter((f) => FIELDS[f].kind === 'amount' && !FIELDS[f].reconciliationOnly);

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { FACT_FIELDS, FactField } from '../../domain/fields';
-import type { DocKind } from '../../domain/types';
+import { FACT_FIELDS, FactField } from '../../domain/fields.js';
+import type { DocKind } from '../../domain/types.js';
 
 export const DOC_KINDS: DocKind[] = [
   'form16', 'bank-statement', 'investment-proof', 'insurance', 'loan-certificate', 'capital-gains', 'ais', 'rent-receipt', 'other',

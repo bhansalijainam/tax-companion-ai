@@ -1,7 +1,7 @@
-import type { FactField } from '../../domain/fields';
-import type { CaseDocument, DocKind } from '../../domain/types';
-import type { Extractor, ExtractorRun } from './llmExtractor';
-import type { ExtractionOutput } from './schema';
+import type { FactField } from '../../domain/fields.js';
+import type { CaseDocument, DocKind } from '../../domain/types.js';
+import type { Extractor, ExtractorRun } from './llmExtractor.js';
+import type { ExtractionOutput } from './schema.js';
 
 /**
  * Deterministic regex baseline. It exists for two reasons:

@@ -4,11 +4,11 @@
  */
 import { z } from 'zod';
 import type { Pool } from 'pg';
-import { emptyCase } from '../src/ai/pipeline';
-import { getAuth, resolveMember, type Member } from './auth';
-import { parseCaseFile } from './caseSchema';
-import { getPool } from './db/pool';
-import { ConflictError, ForbiddenError, LockedError, NotFoundError, Repo, ValidationError } from './db/repo';
+import { emptyCase } from '../src/ai/pipeline.js';
+import { getAuth, resolveMember, type Member } from './auth.js';
+import { parseCaseFile } from './caseSchema.js';
+import { getPool } from './db/pool.js';
+import { ConflictError, ForbiddenError, LockedError, NotFoundError, Repo, ValidationError } from './db/repo.js';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });

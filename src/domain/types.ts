@@ -1,4 +1,4 @@
-import type { FactField } from './fields';
+import type { FactField } from './fields.js';
 
 export type DocKind =
   | 'form16'

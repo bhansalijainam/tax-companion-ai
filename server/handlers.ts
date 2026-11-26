@@ -7,14 +7,14 @@
  */
 import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import { runAgent } from '../src/ai/agent/runAgent';
-import { HybridExtractor } from '../src/ai/extraction/hybridExtractor';
-import { Extractor, LLMExtractor } from '../src/ai/extraction/llmExtractor';
-import { AnthropicProvider, DEFAULT_ANTHROPIC_MODEL } from '../src/ai/llm/providers/anthropic';
-import { LLMError, LLMProvider } from '../src/ai/llm/types';
-import type { CaseFile } from '../src/domain/types';
-import { resolveMember } from './auth';
-import { workspaceEnabled } from './db/pool';
+import { runAgent } from '../src/ai/agent/runAgent.js';
+import { HybridExtractor } from '../src/ai/extraction/hybridExtractor.js';
+import { Extractor, LLMExtractor } from '../src/ai/extraction/llmExtractor.js';
+import { AnthropicProvider, DEFAULT_ANTHROPIC_MODEL } from '../src/ai/llm/providers/anthropic.js';
+import { LLMError, LLMProvider } from '../src/ai/llm/types.js';
+import type { CaseFile } from '../src/domain/types.js';
+import { resolveMember } from './auth.js';
+import { workspaceEnabled } from './db/pool.js';
 
 const MAX_BODY_BYTES = 4_000_000; // Vercel's request limit is ~4.5 MB
 

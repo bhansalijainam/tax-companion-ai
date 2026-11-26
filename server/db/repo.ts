@@ -6,7 +6,7 @@
  * Another firm's rows are reported as NotFound, so ids can't be probed.
  */
 import type { Pool, PoolClient } from 'pg';
-import type { CaseFile } from '../../src/domain/types';
+import type { CaseFile } from '../../src/domain/types.js';
 
 export class NotFoundError extends Error { constructor() { super('Not found'); this.name = 'NotFoundError'; } }
 export class ConflictError extends Error { constructor() { super('This case was changed by someone else. Reload to see the latest version.'); this.name = 'ConflictError'; } }
