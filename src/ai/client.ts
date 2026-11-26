@@ -13,6 +13,9 @@ export interface LiveStatus {
   provider: string | null;
   model: string | null;
   accessTokenRequired: boolean;
+  /** Practice workspace configured: live AI requires a signed-in firm member */
+  signInRequired?: boolean;
+  workspace?: boolean;
 }
 
 export type Mode = 'live' | 'demo';
