@@ -15,7 +15,7 @@ interface SidebarProps {
 
 export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const { summary, caseFile } = useCase();
+  const { summary, caseFile, store } = useCase();
 
   const groups: { title: string; items: { id: Section; label: string; icon: typeof LayoutDashboard; badge?: number }[] }[] = [
     {
@@ -101,8 +101,8 @@ export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
 
       {!collapsed && (
         <div className="p-4 border-t border-sidebar-border text-xs text-sidebar-foreground/60">
-          <p className="font-medium text-sidebar-foreground/80">{caseFile.client.name}</p>
-          <p>FY {caseFile.client.fy} · synthetic demo client</p>
+          <p className="font-medium text-sidebar-foreground/80">{caseFile.client.name || "Untitled client"}</p>
+          <p>FY {caseFile.client.fy}{store.kind === 'local' ? ' · synthetic demo client' : ''}</p>
         </div>
       )}
     </aside>
