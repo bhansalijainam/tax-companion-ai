@@ -10,7 +10,7 @@ import type { CaseStatus, CaseStore, LoadedCase, SaveResult, UploadLinkApi } fro
 import { applyExtraction } from '../ai/pipeline';
 import { detectKind, rulesExtract } from '../ai/extraction/rulesExtractor';
 import { DOC_KIND_LABEL, type CaseDocument, type DocKind } from '../domain/types';
-import { LINK_TTL_DAYS, uploadRequestView, type UploadRequestView } from '../domain/upload';
+import { LINK_TTL_DAYS, MAX_TEXT_CHARS, uploadRequestView, type UploadRequestView } from '../domain/upload';
 import { genericPersona, nextSampleDoc } from '../fixtures/samplePractice';
 
 const PREFIX = 'tax-companion:practice:v1';
@@ -94,10 +94,15 @@ export const demoPractice = {
   clientUpload(id: string, file: { name: string; mime: string; size: number; text?: string; kind?: DocKind }): UploadRequestView | null {
     const c = this.getCase(id);
     const l = this.link(id);
-    if (!c || !l || !this.uploadView(id)) return null;
+    const view = this.uploadView(id);
+    if (!c || !l || !view) return null;
+    if (view.closed) throw Object.assign(new Error('Your return has already been filed, so this link no longer accepts files. Contact your CA if something changed.'), { status: 409 });
+    // The demo keeps nothing it can't read; claiming "received" for a dropped PDF would mislead
+    if (!file.text) throw Object.assign(new Error('The demo only keeps text files. Use “Use sample document”, or try PDFs and photos in a signed-in workspace.'), { status: 415 });
+    if (file.text.length > MAX_TEXT_CHARS) throw Object.assign(new Error('That text file is too long to read in one go. Split it into smaller files.'), { status: 400 });
     const now = new Date().toISOString();
     const kind = file.kind ?? (file.text ? detectKind(file.text) : 'other');
-    let doc: CaseDocument = { id: `up-${Date.now().toString(36)}`, name: file.name, kind, mimeType: file.mime, size: file.size, ...(file.text ? { text: file.text } : {}), status: 'queued', source: 'client', uploadedAt: now };
+    let doc: CaseDocument = { id: `up-${crypto.randomUUID()}`, name: file.name, kind, mimeType: file.mime, size: file.size, ...(file.text ? { text: file.text } : {}), status: 'queued', source: 'client', uploadedAt: now };
     let next: CaseFile = c;
     if (file.text) {
       const applied = applyExtraction(doc, { output: rulesExtract(doc, kind), extractor: 'rules:v1', latencyMs: 0 });

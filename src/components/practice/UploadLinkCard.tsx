@@ -74,7 +74,7 @@ export function UploadLinkCard({ api, disabled, onLink, current }: { api: Upload
         <Button size="sm" onClick={create} disabled={busy || disabled}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />} {status?.active || link ? 'New link' : 'Create link'}
         </Button>
-        {(status?.active ?? 0) > 0 && (
+        {(link || (status?.active ?? 0) > 0) && (
           <Button size="sm" variant="ghost" onClick={revoke} disabled={busy}><Link2Off className="w-4 h-4" /> Turn off links</Button>
         )}
       </div>

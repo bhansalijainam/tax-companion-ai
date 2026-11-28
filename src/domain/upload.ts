@@ -10,6 +10,9 @@ export const LINK_TTL_DAYS = 14;
 export const MAX_FILE_BYTES = 4_000_000;
 export const MAX_FILES_PER_LINK = 40;
 export const MAX_BYTES_PER_LINK = 60_000_000;
+/** Matches the case schema (server/caseSchema.ts): document text and audit trail caps */
+export const MAX_TEXT_CHARS = 400_000;
+export const MAX_AUDIT_ENTRIES = 20_000;
 
 export const ACCEPTED_TYPES: Record<string, string> = {
   'application/pdf': 'PDF',

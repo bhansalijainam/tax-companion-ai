@@ -9,7 +9,7 @@ import pg from 'pg';
 const { Pool } = pg;
 type Pool = pg.Pool;
 import { migrateAll } from './db/migrate.js';
-import { routeWorkspace } from './workspace.js';
+import { readCapped, routeWorkspace } from './workspace.js';
 import { hashToken } from './db/repo.js';
 import { sampleDocText, PRACTICE_PERSONAS } from '../src/fixtures/samplePractice.js';
 
@@ -219,4 +219,49 @@ d('client upload links (HTTP + Postgres)', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/upload limit/);
   });
+  it('stops reading a body with no declared length once it passes 4 MB', async () => {
+    const caseId = await newCase(A.cookie);
+    const { token } = (await call(`/api/cases/${caseId}/upload-links`, { method: 'POST', cookie: A.cookie })).body;
+    let pulled = 0;
+    const chunk = new Uint8Array(1_000_000).fill(0x41);
+    const stream = new ReadableStream<Uint8Array>({
+      pull(ctrl) { pulled++; if (pulled > 50) ctrl.close(); else ctrl.enqueue(chunk); }, // would be 50 MB
+    });
+    const req = new Request(`${BASE}/api/upload/${token}`, {
+      method: 'POST', headers: { 'content-type': 'text/plain', 'x-file-name': 'big.txt' }, body: stream, duplex: 'half',
+    } as RequestInit);
+    const res = (await routeWorkspace(req, pool))!;
+    expect(res.status).toBe(413);
+    expect(pulled).toBeLessThan(10); // stopped early instead of buffering everything
+  });
+
+  it('refuses a text file too long to read whole, instead of reading part of it', async () => {
+    const caseId = await newCase(A.cookie);
+    const { token } = (await call(`/api/cases/${caseId}/upload-links`, { method: 'POST', cookie: A.cookie })).body;
+    const res = await upload(token, 'Statement line\n'.repeat(30_000), { name: 'long.txt' }); // ~450k chars, under 4 MB
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/too long/);
+    expect((await call(`/api/cases/${caseId}`, { cookie: A.cookie })).body.data.documents).toHaveLength(0);
+  });
+
+  it('refuses an upload that would overflow the audit trail, so the case stays saveable', async () => {
+    const caseId = await newCase(A.cookie);
+    const { token } = (await call(`/api/cases/${caseId}/upload-links`, { method: 'POST', cookie: A.cookie })).body;
+    const full = Array.from({ length: 20_000 }, () => ({ at: '2026-01-01T00:00:00Z', actor: 'system', action: 'x', detail: '' }));
+    await pool.query(`update cases set data = jsonb_set(data, '{audit}', $1::jsonb) where id = $2`, [JSON.stringify(full), caseId]);
+    expect((await upload(token, 'x')).status).toBe(400);
+  });
+
+  it('survives a malformed file-name header', async () => {
+    const caseId = await newCase(A.cookie);
+    const { token } = (await call(`/api/cases/${caseId}/upload-links`, { method: 'POST', cookie: A.cookie })).body;
+    const req = new Request(`${BASE}/api/upload/${token}`, { method: 'POST', headers: { 'content-type': 'text/plain', 'x-file-name': '%E0%A4%A' }, body: 'hello' });
+    expect(((await routeWorkspace(req, pool))!).status).toBe(201);
+  });
+
+  it('readCapped returns the whole body under the cap and null over it', async () => {
+    expect((await readCapped(new Request(BASE, { method: 'POST', body: 'abc' }), 3))?.toString()).toBe('abc');
+    expect(await readCapped(new Request(BASE, { method: 'POST', body: 'abcd' }), 3)).toBeNull();
+  });
 });
+

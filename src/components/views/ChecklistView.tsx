@@ -27,6 +27,7 @@ export function ChecklistView({ go }: { go: (s: Section) => void }) {
   const [reminding, setReminding] = useState(false);
   const [phone, setPhone] = useState(caseFile.client.phone ?? '');
   const [uploadLink, setUploadLink] = useState<UploadLinkInfo | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
   const locked = caseStatus === 'final';
   const demoId = 'demoClientId' in store ? (store as { demoClientId: string }).demoClientId : null;
   const mandatory = checklist.items.filter((i) => !i.optional);
@@ -35,8 +36,14 @@ export function ChecklistView({ go }: { go: (s: Section) => void }) {
 
   /** Reminders carry an upload link; make one if this visit hasn't yet */
   const openReminder = async () => {
+    setLinkError(null);
     if (store.uploadLinks && !uploadLink) {
-      try { setUploadLink(await store.uploadLinks.create()); } catch { /* reminder still works without a link */ }
+      try {
+        setUploadLink(await store.uploadLinks.create());
+      } catch (e) {
+        // The reminder still works without a link; say so instead of failing silently
+        setLinkError(`Couldn’t create an upload link (${(e as Error).message}). The message below asks the client to reply with files instead.`);
+      }
     }
     setReminding(true);
   };
@@ -136,6 +143,7 @@ export function ChecklistView({ go }: { go: (s: Section) => void }) {
       </div>
 
       <ReminderDialog
+        notice={linkError}
         open={reminding}
         onOpenChange={setReminding}
         clientName={caseFile.client.name}

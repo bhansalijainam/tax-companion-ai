@@ -8,7 +8,7 @@ import { emptyCase } from '../src/ai/pipeline.js';
 import { getAuth, resolveMember, type Member } from './auth.js';
 import { ClientProfileSchema, parseCaseFile } from './caseSchema.js';
 import { getPool } from './db/pool.js';
-import { ConflictError, ForbiddenError, GoneError, LockedError, NotFoundError, Repo, ValidationError } from './db/repo.js';
+import { ConflictError, ForbiddenError, GoneError, isTokenShaped, LockedError, NotFoundError, Repo, ValidationError } from './db/repo.js';
 import { contentMatchesType, isDocKind, MAX_FILE_BYTES, normaliseMime, safeFileName } from '../src/domain/upload.js';
 
 const json = (body: unknown, status = 200) =>
@@ -118,6 +118,33 @@ export const caseFileHandler: Handler = async (req, m, repo, { id, docId }) => {
   });
 };
 
+const TOO_LARGE = 'That file is larger than 4 MB. Send a smaller copy, or a photo of each page.';
+
+const safeDecode = (v: string) => { try { return decodeURIComponent(v); } catch { return v; } };
+
+/**
+ * Reads a request body, stopping as soon as it passes `max` bytes. A missing or false
+ * Content-Length (e.g. chunked uploads) can't make the server buffer more than the cap.
+ * Returns null when the body is too large.
+ */
+export async function readCapped(req: Request, max: number): Promise<Buffer | null> {
+  if (!req.body) return Buffer.alloc(0);
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks, total);
+}
+
 const publicJson = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -134,17 +161,19 @@ export async function clientUploadHandler(req: Request, token: string, pool?: Po
     if (req.method === 'GET') return publicJson(await repo.getUploadRequest(token));
     if (req.method !== 'POST') return publicJson({ error: 'Method not allowed' }, 405);
 
+    // Cheap checks first: no body is read for a malformed token or a declared oversize file
+    if (!isTokenShaped(token)) return publicJson({ error: new GoneError().message }, 410);
     const declared = Number(req.headers.get('content-length') ?? '0');
-    if (declared > MAX_FILE_BYTES) return publicJson({ error: 'That file is larger than 4 MB. Send a smaller copy, or a photo of each page.' }, 413);
-    const name = safeFileName(decodeURIComponent(req.headers.get('x-file-name') ?? 'document'));
+    if (declared > MAX_FILE_BYTES) return publicJson({ error: TOO_LARGE }, 413);
+    const name = safeFileName(safeDecode(req.headers.get('x-file-name') ?? 'document'));
     const mime = normaliseMime(req.headers.get('content-type') ?? '', name);
     if (!mime) return publicJson({ error: 'Please upload a PDF, a photo (JPEG, PNG, WebP) or a text/CSV file.' }, 415);
     const kindHeader = req.headers.get('x-doc-kind');
     const kind = kindHeader && isDocKind(kindHeader) ? kindHeader : undefined;
 
-    const bytes = Buffer.from(await req.arrayBuffer());
+    const bytes = await readCapped(req, MAX_FILE_BYTES);
+    if (!bytes) return publicJson({ error: TOO_LARGE }, 413);
     if (bytes.length === 0) return publicJson({ error: 'That file is empty.' }, 400);
-    if (bytes.length > MAX_FILE_BYTES) return publicJson({ error: 'That file is larger than 4 MB. Send a smaller copy, or a photo of each page.' }, 413);
     if (!contentMatchesType(bytes, mime)) return publicJson({ error: 'That file’s contents don’t match its type. Please upload the original PDF or photo.' }, 415);
 
     return publicJson(await repo.acceptClientUpload(token, { name, mime, bytes, kind }), 201);

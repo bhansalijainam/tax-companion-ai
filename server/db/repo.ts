@@ -10,7 +10,7 @@ import type { Pool, PoolClient } from 'pg';
 import { applyExtraction } from '../../src/ai/pipeline.js';
 import { detectKind, rulesExtract } from '../../src/ai/extraction/rulesExtractor.js';
 import { DOC_KIND_LABEL, type CaseDocument, type DocKind } from '../../src/domain/types.js';
-import { LINK_TTL_DAYS, MAX_BYTES_PER_LINK, MAX_FILES_PER_LINK, uploadRequestView, type UploadRequestView } from '../../src/domain/upload.js';
+import { LINK_TTL_DAYS, MAX_AUDIT_ENTRIES, MAX_BYTES_PER_LINK, MAX_FILES_PER_LINK, MAX_TEXT_CHARS, uploadRequestView, type UploadRequestView } from '../../src/domain/upload.js';
 import type { CaseFile } from '../../src/domain/types.js';
 import { evaluateChecklist, summarizeChecklist, applyStatus, type ChecklistSummary } from '../../src/domain/checklist.js';
 
@@ -26,6 +26,8 @@ export interface UploadLinkRow { id: string; created_at: string; expires_at: str
 export interface ClientFile { name: string; mime: string; bytes: Buffer; kind?: DocKind; }
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
+/** Shape check only; says nothing about whether the link exists */
+export const isTokenShaped = (token: string) => TOKEN_RE.test(token);
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
 export type Role = 'partner' | 'preparer';
@@ -286,10 +288,16 @@ export class Repo {
         throw new ValidationError('This link has reached its upload limit. Ask your CA for a new one.');
       }
       if (cs.data.documents.length >= 200) throw new ValidationError('This case already has too many documents. Ask your CA.');
+      // The case schema caps the audit trail; one more entry would make the case unsaveable
+      if ((cs.data.audit ?? []).length >= MAX_AUDIT_ENTRIES) throw new ValidationError('Your CA’s file for you is full. Please ask them to contact you.');
 
       const now = new Date().toISOString();
       const isText = file.mime.startsWith('text/');
-      const text = isText ? file.bytes.toString('utf8').slice(0, 400_000) : undefined;
+      const text = isText ? file.bytes.toString('utf8') : undefined;
+      // Never read part of a statement: a cut-off file would look fully read
+      if (text && text.length > MAX_TEXT_CHARS) {
+        throw new ValidationError('That text file is too long to read in one go. Send it as a PDF, or split it into smaller files.');
+      }
       const kind: DocKind = file.kind ?? (text ? detectKind(text) : 'other');
       let doc: CaseDocument = {
         id: `up-${randomUUID()}`, name: file.name, kind, mimeType: file.mime, size: file.bytes.length,

@@ -218,7 +218,8 @@ function useCaseState(store: CaseStore) {
   useEffect(() => {
     if (!ready || mode !== 'live' || caseStatus === 'final') return;
     for (const d of caseRef.current.documents) {
-      if (d.source === 'client' && d.status === 'queued' && !autoRead.current.has(d.id)) {
+      // 'extracting' here means a read was cut off by a reload or closed tab: this session never started it
+      if (d.source === 'client' && (d.status === 'queued' || d.status === 'extracting') && !autoRead.current.has(d.id)) {
         autoRead.current.add(d.id);
         void runExtraction(d);
       }
