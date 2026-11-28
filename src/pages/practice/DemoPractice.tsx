@@ -2,14 +2,15 @@ import { useMemo, useState } from 'react';
 import { Link, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, FlaskConical, Landmark, Plus, RotateCcw } from 'lucide-react';
 import { CaseProvider } from '@/state/CaseContext';
-import { DemoClientCaseStore, demoPractice } from '@/state/practiceStore';
+import { DEMO_FIRM, DemoClientCaseStore, demoPractice } from '@/state/practiceStore';
 import Index from '@/pages/Index';
 import { PracticeDashboard, type DashboardRow } from '@/components/practice/PracticeDashboard';
 import { NewClientDialog } from '@/components/practice/NewClientDialog';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
+import { DemoUploadRoute } from '@/pages/upload/UploadRoutes';
 
-const FIRM = 'Mehta & Rao Associates (demo)';
+const FIRM = `${DEMO_FIRM} (demo)`;
 
 function DemoDashboard() {
   const navigate = useNavigate();
@@ -90,8 +91,9 @@ function DemoDashboard() {
 function DemoClient() {
   const { id = '' } = useParams();
   const store = useMemo(() => new DemoClientCaseStore(id), [id]);
+  // Keyed by case: a fresh provider (and read tracking) for each case
   return (
-    <CaseProvider store={store}>
+    <CaseProvider key={id} store={store}>
       <Index practiceDemo />
     </CaseProvider>
   );
@@ -103,6 +105,7 @@ export default function DemoPractice() {
     <Routes>
       <Route index element={<DemoDashboard />} />
       <Route path=":id" element={<DemoClient />} />
+      <Route path=":id/upload" element={<DemoUploadRoute />} />
     </Routes>
   );
 }

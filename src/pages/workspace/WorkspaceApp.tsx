@@ -14,8 +14,9 @@ function Centered({ children }: { children: React.ReactNode }) {
 function CaseRoute() {
   const { id = '' } = useParams();
   const store = useMemo(() => new ApiCaseStore(id), [id]);
+  // Keyed by case: a fresh provider (and read tracking) for each case
   return (
-    <CaseProvider store={store}>
+    <CaseProvider key={id} store={store}>
       <Index workspace />
     </CaseProvider>
   );

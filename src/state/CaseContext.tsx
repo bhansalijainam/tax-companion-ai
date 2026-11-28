@@ -36,8 +36,10 @@ type Action =
 
 const now = () => new Date().toISOString();
 
-function reducer(c: CaseFile, a: Action): CaseFile {
-  const audit = (actor: 'system' | 'ai' | 'ca', action: string, detail: string) => [...c.audit, { at: now(), actor, action, detail }];
+// Exported for tests (src/state/caseReducer.test.ts)
+// eslint-disable-next-line react-refresh/only-export-components
+export function reducer(c: CaseFile, a: Action): CaseFile {
+  const audit = (actor: 'system' | 'ai' | 'ca' | 'client', action: string, detail: string) => [...c.audit, { at: now(), actor, action, detail }];
   switch (a.type) {
     case 'reset':
       return a.caseFile;
@@ -57,6 +59,8 @@ function reducer(c: CaseFile, a: Action): CaseFile {
     }
     case 'applyExtraction': {
       const doc = c.documents.find((d) => d.id === a.docId);
+      // Removed while it was being read: drop the late result instead of leaving orphan facts
+      if (!doc) return c;
       return {
         ...c,
         documents: c.documents.map((d) => (d.id === a.docId ? { ...d, ...a.applied.doc } : d)),
@@ -199,15 +203,34 @@ function useCaseState(store: CaseStore) {
   const summary = useMemo(() => caseSummary(caseFile), [caseFile]);
   const checklist = useMemo(() => evaluateChecklist(caseFile, caseStatus), [caseFile, caseStatus]);
 
+  // Every read started in this session, manual or automatic, so the auto-reader never starts a second one
+  const startedReads = useRef(new Set<string>());
+
   const runExtraction = useCallback(async (doc: CaseDocument) => {
+    startedReads.current.add(doc.id);
     dispatch({ type: 'patchDocument', id: doc.id, patch: { status: 'extracting', error: undefined } });
     try {
+      // A client's PDF or photo lives on the server, not in the case; fetch it to read it
+      if (!doc.text && !doc.base64 && doc.source === 'client' && store.fetchFile) {
+        doc = { ...doc, base64: await store.fetchFile(doc.id) };
+      }
       const run = await extractDocument(doc, mode);
       dispatch({ type: 'applyExtraction', docId: doc.id, applied: applyExtraction(doc, run) });
     } catch (e) {
       dispatch({ type: 'patchDocument', id: doc.id, patch: { status: 'error', error: e instanceof Error ? e.message : String(e) } });
     }
-  }, [mode]);
+  }, [mode, store]);
+
+  // Live AI reads files clients sent through their upload link as soon as the case opens
+  useEffect(() => {
+    if (!ready || mode !== 'live' || caseStatus === 'final') return;
+    for (const d of caseRef.current.documents) {
+      // 'extracting' here means a read was cut off by a reload or closed tab: this session never started it
+      if (d.source === 'client' && (d.status === 'queued' || d.status === 'extracting') && !startedReads.current.has(d.id)) {
+        void runExtraction(d); // records the id before any await
+      }
+    }
+  }, [ready, mode, caseStatus, caseFile.documents.length, runExtraction]);
 
   const uploadFiles = useCallback(async (files: File[]) => {
     for (const file of files) {

@@ -8,7 +8,8 @@ import { emptyCase } from '../src/ai/pipeline.js';
 import { getAuth, resolveMember, type Member } from './auth.js';
 import { ClientProfileSchema, parseCaseFile } from './caseSchema.js';
 import { getPool } from './db/pool.js';
-import { ConflictError, ForbiddenError, LockedError, NotFoundError, Repo, ValidationError } from './db/repo.js';
+import { ConflictError, ForbiddenError, GoneError, isTokenShaped, LockedError, NotFoundError, Repo, ValidationError } from './db/repo.js';
+import { contentMatchesType, isDocKind, MAX_FILE_BYTES, normaliseMime, safeFileName } from '../src/domain/upload.js';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
@@ -95,6 +96,96 @@ export const caseAuditHandler: Handler = async (req, m, repo, { id }) => {
   return json({ events: await repo.listAudit(m.firmId, id) });
 };
 
+export const uploadLinksHandler: Handler = async (req, m, repo, { id }) => {
+  if (req.method === 'GET') return json({ links: await repo.listUploadLinks(m.firmId, id) });
+  if (req.method === 'POST') return json(await repo.createUploadLink(m.firmId, id, m.userId), 201);
+  if (req.method === 'DELETE') return json({ revoked: await repo.revokeUploadLinks(m.firmId, id, m.userId) });
+  return json({ error: 'Method not allowed' }, 405);
+};
+
+/** A client's stored file, for the firm's members. Served as a download, never rendered inline. */
+export const caseFileHandler: Handler = async (req, m, repo, { id, docId }) => {
+  if (req.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+  const f = await repo.getCaseFile(m.firmId, id, decodeURIComponent(docId));
+  return new Response(new Uint8Array(f.content), {
+    headers: {
+      'content-type': f.mime_type,
+      'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(f.name)}`,
+      'x-content-type-options': 'nosniff',
+      'content-security-policy': "default-src 'none'; sandbox",
+      'cache-control': 'private, no-store',
+    },
+  });
+};
+
+const TOO_LARGE = 'That file is larger than 4 MB. Send a smaller copy, or a photo of each page.';
+
+const safeDecode = (v: string) => { try { return decodeURIComponent(v); } catch { return v; } };
+
+/**
+ * Reads a request body, stopping as soon as it passes `max` bytes. A missing or false
+ * Content-Length (e.g. chunked uploads) can't make the server buffer more than the cap.
+ * Returns null when the body is too large.
+ */
+export async function readCapped(req: Request, max: number): Promise<Buffer | null> {
+  if (!req.body) return Buffer.alloc(0);
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks, total);
+}
+
+const publicJson = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer', 'x-robots-tag': 'noindex' },
+  });
+
+/**
+ * /api/upload/:token: the client's side. No sign-in; the unguessable token is the credential
+ * and it reaches exactly one case. Unknown, expired and revoked tokens look identical (410).
+ */
+export async function clientUploadHandler(req: Request, token: string, pool?: Pool): Promise<Response> {
+  try {
+    const repo = new Repo(pool ?? getPool());
+    if (req.method === 'GET') return publicJson(await repo.getUploadRequest(token));
+    if (req.method !== 'POST') return publicJson({ error: 'Method not allowed' }, 405);
+
+    // Cheap checks first: no body is read for a malformed token or a declared oversize file
+    if (!isTokenShaped(token)) return publicJson({ error: new GoneError().message }, 410);
+    const declared = Number(req.headers.get('content-length') ?? '0');
+    if (declared > MAX_FILE_BYTES) return publicJson({ error: TOO_LARGE }, 413);
+    const name = safeFileName(safeDecode(req.headers.get('x-file-name') ?? 'document'));
+    const mime = normaliseMime(req.headers.get('content-type') ?? '', name);
+    if (!mime) return publicJson({ error: 'Please upload a PDF, a photo (JPEG, PNG, WebP) or a text/CSV file.' }, 415);
+    const kindHeader = req.headers.get('x-doc-kind');
+    const kind = kindHeader && isDocKind(kindHeader) ? kindHeader : undefined;
+
+    const bytes = await readCapped(req, MAX_FILE_BYTES);
+    if (!bytes) return publicJson({ error: TOO_LARGE }, 413);
+    if (bytes.length === 0) return publicJson({ error: 'That file is empty.' }, 400);
+    if (!contentMatchesType(bytes, mime)) return publicJson({ error: 'That file’s contents don’t match its type. Please upload the original PDF or photo.' }, 415);
+
+    return publicJson(await repo.acceptClientUpload(token, { name, mime, bytes, kind }), 201);
+  } catch (err) {
+    if (err instanceof GoneError) return publicJson({ error: err.message }, 410);
+    if (err instanceof LockedError) return publicJson({ error: 'Your return has already been filed, so this link no longer accepts files. Contact your CA if something changed.' }, 409);
+    if (err instanceof ValidationError) return publicJson({ error: err.message }, 400);
+    console.error('[upload]', err instanceof Error ? err.message : err);
+    return publicJson({ error: 'Something went wrong. Please try again in a minute.' }, 500);
+  }
+}
+
 export const meHandler: Handler = async (_req, m) => json({ member: m });
 
 /** Better Auth's own endpoints (sign-up, sign-in, organizations, invitations). */
@@ -114,5 +205,11 @@ export function routeWorkspace(req: Request, pool?: Pool): Promise<Response> | n
   if (m) return withMember(caseStatusHandler, pool)(req, { id: m[1] });
   m = path.match(/^\/api\/cases\/([^/]+)\/audit$/);
   if (m) return withMember(caseAuditHandler, pool)(req, { id: m[1] });
+  m = path.match(/^\/api\/cases\/([^/]+)\/upload-links$/);
+  if (m) return withMember(uploadLinksHandler, pool)(req, { id: m[1] });
+  m = path.match(/^\/api\/cases\/([^/]+)\/files\/([^/]+)$/);
+  if (m) return withMember(caseFileHandler, pool)(req, { id: m[1], docId: m[2] });
+  m = path.match(/^\/api\/upload\/([^/]+)$/);
+  if (m) return clientUploadHandler(req, m[1], pool);
   return null;
 }

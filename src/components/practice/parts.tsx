@@ -86,12 +86,16 @@ export function ProfileFields({ value, onChange, disabled }: { value: ClientProf
  * automated sending with templates and opt-in comes in M4.
  */
 export function ReminderDialog({
-  open, onOpenChange, clientName, fy, items, phone, firmName, onSent,
+  open, onOpenChange, clientName, fy, items, phone, firmName, onSent, uploadUrl, notice,
 }: {
   open: boolean; onOpenChange: (o: boolean) => void; clientName: string; fy: string;
   items: ChecklistSummary['items']; phone?: string; firmName?: string; onSent?: (channel: 'whatsapp' | 'copy') => void;
+  /** When set, the message carries the client's private upload link */
+  uploadUrl?: string;
+  /** A problem to show above the message, e.g. the upload link couldn't be made */
+  notice?: string | null;
 }) {
-  const initial = useMemo(() => reminderMessage({ clientName, fy, items, firmName }), [clientName, fy, items, firmName]);
+  const initial = useMemo(() => reminderMessage({ clientName, fy, items, firmName, uploadUrl }), [clientName, fy, items, firmName, uploadUrl]);
   const [text, setText] = useState(initial);
   const [to, setTo] = useState(phone ?? '');
   const [copied, setCopied] = useState(false);
@@ -105,6 +109,7 @@ export function ReminderDialog({
           <DialogDescription>Lists only what’s still missing. Edit it if you like, then send it from your own WhatsApp.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          {notice && <p className="rounded-md bg-warning/10 text-warning px-3 py-2 text-xs" role="alert">{notice}</p>}
           <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={9} aria-label="Reminder message" className="text-sm" />
           <div className="space-y-1.5">
             <Label htmlFor="rm-phone">Client’s WhatsApp number <span className="text-muted-foreground font-normal">(optional)</span></Label>

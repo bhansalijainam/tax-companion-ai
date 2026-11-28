@@ -138,7 +138,10 @@ export function evaluateChecklist(c: CaseFile, status?: CaseStatusLike): Checkli
       return { ...req, status: 'missing', count, docIds, note: count ? `${count} of ${req.minCount} received` : undefined };
     }
     if (docs.some((d) => d.status === 'error')) return { ...req, status: 'issue', count, docIds, note: 'Could not be read; ask for a clearer copy' };
-    if (docs.some((d) => d.status === 'queued' || d.status === 'extracting')) return { ...req, status: 'received', count, docIds, note: 'Being read' };
+    if (docs.some((d) => d.status === 'extracting')) return { ...req, status: 'received', count, docIds, note: 'Being read' };
+    if (docs.some((d) => d.status === 'queued')) {
+      return { ...req, status: 'received', count, docIds, note: docs.some((d) => d.source === 'client' && d.status === 'queued') ? 'Sent by the client, not read yet' : 'Waiting to be read' };
+    }
     if (docs.some((d) => flaggedDocs.has(d.id))) return { ...req, status: 'issue', count, docIds, note: 'Has a high-priority question' };
     return { ...req, status: 'ok', count, docIds };
   });
@@ -167,6 +170,7 @@ export function evaluateChecklist(c: CaseFile, status?: CaseStatusLike): Checkli
     : stage === 'awaiting-docs' ? `Chase ${missing.length} missing document${missing.length > 1 ? 's' : ''}: ${missing.map((m) => shortLabel(m) + (m.count ? ` (${m.count} of ${m.minCount})` : '')).join(', ')}`
     : pendingFacts ? `Review ${pendingFacts} extracted figure${pendingFacts > 1 ? 's' : ''}`
     : highFlags.length ? `Resolve ${highFlags.length} high-priority question${highFlags.length > 1 ? 's' : ''}`
+    : mandatory.some((i) => i.status === 'received') ? 'Read the documents the client sent'
     : mandatory.some((i) => i.status !== 'ok') ? 'Fix documents that could not be read'
     : 'Ready for partner sign-off';
 
@@ -191,7 +195,7 @@ export function applyStatus(s: ChecklistSummary, status: CaseStatusLike | null |
 const shortLabel = (i: Pick<ChecklistItem, 'kind' | 'label'>) => (i.kind === 'form16' ? 'Form 16' : i.label.replace(/\s*\(.*\)$/, ''));
 
 /** The message a CA sends: names only what is still missing, with the reason for each. */
-export function reminderMessage(opts: { clientName: string; fy: string; firmName?: string; items: ChecklistSummary['items'] }): string {
+export function reminderMessage(opts: { clientName: string; fy: string; firmName?: string; items: ChecklistSummary['items']; uploadUrl?: string }): string {
   const missing = opts.items.filter((i) => i.status === 'missing' && !i.optional);
   const unreadable = opts.items.filter((i) => i.status === 'issue' && i.note?.startsWith('Could not be read'));
   const first = opts.clientName.trim().split(/\s+/)[0] || 'there';
@@ -207,7 +211,9 @@ export function reminderMessage(opts: { clientName: string; fy: string; firmName
     '',
     ...lines,
     '',
-    'You can reply here with photos or PDFs. Thank you!',
+    opts.uploadUrl
+      ? `Upload them here (private to you, no login needed):\n${opts.uploadUrl}\n\nThank you!`
+      : 'You can reply here with photos or PDFs. Thank you!',
     ...(opts.firmName ? ['', `— ${opts.firmName}`] : []),
   ].join('\n');
 }

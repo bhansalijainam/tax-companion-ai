@@ -14,15 +14,38 @@ import { authOptions } from '../auth.js';
 import { migrationUrl, poolConfig } from './pool.js';
 import { SCHEMA_SQL } from './schema.js';
 
+/** Any fixed key; every migrator takes the same lock, so runs never overlap */
+const MIGRATION_LOCK = 7_340_211;
+
 export async function applySchema(pool: Pool): Promise<void> {
-  await pool.query(SCHEMA_SQL);
+  const c = await pool.connect();
+  try {
+    await c.query('select pg_advisory_lock($1)', [MIGRATION_LOCK]);
+    await c.query(SCHEMA_SQL);
+  } finally {
+    await c.query('select pg_advisory_unlock($1)', [MIGRATION_LOCK]).catch(() => {});
+    c.release();
+  }
 }
 
+
+/**
+ * Runs Better Auth's migrations, then ours, under a Postgres advisory lock. Without it,
+ * two migrators on an empty database (parallel test files, overlapping deploys) both
+ * try to create the same tables and one fails.
+ */
 export async function migrateAll(pool: Pool): Promise<{ authTablesCreated: string[] }> {
-  const { toBeCreated, runMigrations } = await getMigrations(authOptions(pool));
-  await runMigrations();
-  await applySchema(pool);
-  return { authTablesCreated: toBeCreated.map((t) => t.table) };
+  const lock = await pool.connect();
+  try {
+    await lock.query('select pg_advisory_lock($1)', [MIGRATION_LOCK]);
+    const { toBeCreated, runMigrations } = await getMigrations(authOptions(pool));
+    await runMigrations();
+    await lock.query(SCHEMA_SQL); // on the locked connection: applySchema would wait on our own lock
+    return { authTablesCreated: toBeCreated.map((t) => t.table) };
+  } finally {
+    await lock.query('select pg_advisory_unlock($1)', [MIGRATION_LOCK]).catch(() => {});
+    lock.release();
+  }
 }
 
 const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'));

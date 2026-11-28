@@ -26,7 +26,8 @@ export function authOptions(pool: Pool): BetterAuthOptions {
     // Session cookie cache stays off: the active firm must be read fresh on every request.
     session: { cookieCache: { enabled: false } },
     // Sessions also gate paid AI routes, so keep Better Auth's own rate limiting on.
-    rateLimit: { enabled: true, storage: 'database' },
+    // Tests sign up many users in parallel files; only the test runner can turn the limiter off
+    rateLimit: { enabled: !(process.env.NODE_ENV === 'test' && process.env.AUTH_RATE_LIMIT === 'off'), storage: 'database' },
   };
 }
 

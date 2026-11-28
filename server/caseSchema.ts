@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { FACT_FIELDS } from '../src/domain/fields.js';
 import { DOC_KINDS, type CaseFile, type DocKind } from '../src/domain/types.js';
+import { MAX_AUDIT_ENTRIES, MAX_TEXT_CHARS } from '../src/domain/upload.js';
 
 const str = (max: number) => z.string().max(max);
 
@@ -21,9 +22,10 @@ export const CaseFileSchema = z.object({
   profile: ClientProfileSchema.optional(),
   documents: z.array(z.object({
     id: str(100), name: str(300), kind: z.enum(DOC_KINDS as [DocKind, ...DocKind[]]), mimeType: str(100), size: z.number().nonnegative(),
-    text: str(400_000).optional(), base64: z.undefined().optional(),
+    text: str(MAX_TEXT_CHARS).optional(), base64: z.undefined().optional(),
     status: z.enum(['queued', 'extracting', 'extracted', 'error']), error: str(2000).optional(),
     extractor: str(200).optional(), latencyMs: z.number().optional(), summary: str(2000).optional(),
+    source: z.literal('client').optional(), uploadedAt: str(40).optional(),
   })).max(200),
   facts: z.array(z.object({
     id: str(200), docId: str(100), field: z.enum(FACT_FIELDS as [string, ...string[]]),
@@ -38,7 +40,7 @@ export const CaseFileSchema = z.object({
     docId: str(100).optional(), amount: z.number().optional(),
   })).max(500),
   flagState: z.record(z.string(), z.object({ status: z.enum(['open', 'resolved', 'dismissed']), note: str(2000).optional(), at: str(40) })),
-  audit: z.array(z.object({ at: str(40), actor: z.enum(['system', 'ai', 'ca']), action: str(100), detail: str(2000) })).max(20_000),
+  audit: z.array(z.object({ at: str(40), actor: z.enum(['system', 'ai', 'ca', 'client']), action: str(100), detail: str(2000) })).max(MAX_AUDIT_ENTRIES),
 });
 
 export const parseCaseFile = (v: unknown): CaseFile => CaseFileSchema.parse(v) as CaseFile;

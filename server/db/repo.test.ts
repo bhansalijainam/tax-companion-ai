@@ -10,6 +10,7 @@ import pg from 'pg';
 const { Pool } = pg;
 type Pool = pg.Pool;
 import { applySchema } from './migrate.js';
+import { SCHEMA_SQL } from './schema.js';
 import { ConflictError, LockedError, NotFoundError, Repo } from './repo.js';
 import { buildSampleCase, emptyCase } from '../../src/ai/pipeline.js';
 import { EMPTY_PROFILE } from '../../src/domain/checklist.js';
@@ -69,6 +70,48 @@ d('repo (Postgres)', () => {
     expect(row.summary?.items.some((i) => i.kind === 'capital-gains')).toBe(true); // inferred from the documents
     const { rows } = await pool.query('select summary from cases where id = $1', [caseId]);
     expect(rows[0].summary).not.toBeNull();
+  });
+
+  it('re-applying the schema takes no locks that would block reads or writes', async () => {
+    // Deploys re-run the schema while the app is serving; strong locks there deadlock with saves
+    const c = await pool.connect();
+    try {
+      await c.query('begin');
+      await c.query(SCHEMA_SQL);
+      const { rows } = await c.query<{ relname: string; mode: string }>(
+        `select c.relname, l.mode from pg_locks l join pg_class c on c.oid = l.relation
+          where l.pid = pg_backend_pid()
+            and l.mode in ('ShareLock', 'ShareRowExclusiveLock', 'ExclusiveLock', 'AccessExclusiveLock')
+            and c.relname = any($1)`,
+        [['clients', 'cases', 'audit_events', 'upload_links', 'case_files']],
+      );
+      expect(rows).toEqual([]);
+    } finally {
+      await c.query('rollback');
+      c.release();
+    }
+  });
+
+  it('upgrades the audit actor constraint on its own table, not one with the same name elsewhere', async () => {
+    // public.audit_events already has the 4-value constraint; a second schema still has the old 3-value one
+    const c = await pool.connect();
+    const schema = `scope_${Date.now()}`;
+    try {
+      await c.query(`create schema ${schema}`);
+      await c.query(`set search_path = ${schema}, public`);
+      await c.query(SCHEMA_SQL);
+      await c.query(`alter table audit_events drop constraint audit_events_actor_kind_check`);
+      await c.query(`alter table audit_events add constraint audit_events_actor_kind_check check (actor_kind in ('ca', 'ai', 'system'))`);
+      await c.query(SCHEMA_SQL);
+      const { rows } = await c.query(
+        `select pg_get_constraintdef(oid) as def from pg_constraint where conname = 'audit_events_actor_kind_check' and conrelid = 'audit_events'::regclass`,
+      );
+      expect(rows[0].def).toContain('client');
+    } finally {
+      await c.query(`set search_path to default`);
+      await c.query(`drop schema ${schema} cascade`);
+      c.release();
+    }
   });
 
   it('never returns another firm’s case', async () => {
