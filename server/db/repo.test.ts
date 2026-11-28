@@ -92,6 +92,28 @@ d('repo (Postgres)', () => {
     }
   });
 
+  it('upgrades the audit actor constraint on its own table, not one with the same name elsewhere', async () => {
+    // public.audit_events already has the 4-value constraint; a second schema still has the old 3-value one
+    const c = await pool.connect();
+    const schema = `scope_${Date.now()}`;
+    try {
+      await c.query(`create schema ${schema}`);
+      await c.query(`set search_path = ${schema}, public`);
+      await c.query(SCHEMA_SQL);
+      await c.query(`alter table audit_events drop constraint audit_events_actor_kind_check`);
+      await c.query(`alter table audit_events add constraint audit_events_actor_kind_check check (actor_kind in ('ca', 'ai', 'system'))`);
+      await c.query(SCHEMA_SQL);
+      const { rows } = await c.query(
+        `select pg_get_constraintdef(oid) as def from pg_constraint where conname = 'audit_events_actor_kind_check' and conrelid = 'audit_events'::regclass`,
+      );
+      expect(rows[0].def).toContain('client');
+    } finally {
+      await c.query(`set search_path to default`);
+      await c.query(`drop schema ${schema} cascade`);
+      c.release();
+    }
+  });
+
   it('never returns another firm’s case', async () => {
     const { caseId } = await repo.createClient(A, 'user-a', { name: 'Secret', fy: '2024-25' }, emptyCase());
     await expect(repo.getCase(B, caseId)).rejects.toBeInstanceOf(NotFoundError);

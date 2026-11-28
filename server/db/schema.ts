@@ -61,6 +61,7 @@ select pg_temp.ensure_index('audit_case_idx', $ddl$create index audit_case_idx o
 -- 'client' (M3): uploads through a client link
 do $$ begin
   if not exists (select 1 from pg_constraint where conname = 'audit_events_actor_kind_check'
+                  and conrelid = 'audit_events'::regclass
                   and pg_get_constraintdef(oid) like '%client%') then
     alter table audit_events drop constraint if exists audit_events_actor_kind_check;
     alter table audit_events add constraint audit_events_actor_kind_check check (actor_kind in ('ca', 'ai', 'system', 'client'));

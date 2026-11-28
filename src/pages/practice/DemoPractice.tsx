@@ -91,8 +91,9 @@ function DemoDashboard() {
 function DemoClient() {
   const { id = '' } = useParams();
   const store = useMemo(() => new DemoClientCaseStore(id), [id]);
+  // Keyed by case: a fresh provider (and read tracking) for each case
   return (
-    <CaseProvider store={store}>
+    <CaseProvider key={id} store={store}>
       <Index practiceDemo />
     </CaseProvider>
   );
