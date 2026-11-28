@@ -10,6 +10,7 @@ import pg from 'pg';
 const { Pool } = pg;
 type Pool = pg.Pool;
 import { applySchema } from './migrate.js';
+import { SCHEMA_SQL } from './schema.js';
 import { ConflictError, LockedError, NotFoundError, Repo } from './repo.js';
 import { buildSampleCase, emptyCase } from '../../src/ai/pipeline.js';
 import { EMPTY_PROFILE } from '../../src/domain/checklist.js';
@@ -69,6 +70,26 @@ d('repo (Postgres)', () => {
     expect(row.summary?.items.some((i) => i.kind === 'capital-gains')).toBe(true); // inferred from the documents
     const { rows } = await pool.query('select summary from cases where id = $1', [caseId]);
     expect(rows[0].summary).not.toBeNull();
+  });
+
+  it('re-applying the schema takes no locks that would block reads or writes', async () => {
+    // Deploys re-run the schema while the app is serving; strong locks there deadlock with saves
+    const c = await pool.connect();
+    try {
+      await c.query('begin');
+      await c.query(SCHEMA_SQL);
+      const { rows } = await c.query<{ relname: string; mode: string }>(
+        `select c.relname, l.mode from pg_locks l join pg_class c on c.oid = l.relation
+          where l.pid = pg_backend_pid()
+            and l.mode in ('ShareLock', 'ShareRowExclusiveLock', 'ExclusiveLock', 'AccessExclusiveLock')
+            and c.relname = any($1)`,
+        [['clients', 'cases', 'audit_events', 'upload_links', 'case_files']],
+      );
+      expect(rows).toEqual([]);
+    } finally {
+      await c.query('rollback');
+      c.release();
+    }
   });
 
   it('never returns another firm’s case', async () => {
