@@ -36,7 +36,9 @@ type Action =
 
 const now = () => new Date().toISOString();
 
-function reducer(c: CaseFile, a: Action): CaseFile {
+// Exported for tests (src/state/caseReducer.test.ts)
+// eslint-disable-next-line react-refresh/only-export-components
+export function reducer(c: CaseFile, a: Action): CaseFile {
   const audit = (actor: 'system' | 'ai' | 'ca' | 'client', action: string, detail: string) => [...c.audit, { at: now(), actor, action, detail }];
   switch (a.type) {
     case 'reset':
@@ -57,6 +59,8 @@ function reducer(c: CaseFile, a: Action): CaseFile {
     }
     case 'applyExtraction': {
       const doc = c.documents.find((d) => d.id === a.docId);
+      // Removed while it was being read: drop the late result instead of leaving orphan facts
+      if (!doc) return c;
       return {
         ...c,
         documents: c.documents.map((d) => (d.id === a.docId ? { ...d, ...a.applied.doc } : d)),
