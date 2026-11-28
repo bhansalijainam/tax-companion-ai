@@ -44,6 +44,42 @@ create table if not exists audit_events (
   at             timestamptz not null default now()
 );
 create index if not exists audit_case_idx on audit_events (case_id, id);
+-- 'client' (M3): uploads through a client link
+alter table audit_events drop constraint if exists audit_events_actor_kind_check;
+alter table audit_events add constraint audit_events_actor_kind_check check (actor_kind in ('ca', 'ai', 'system', 'client'));
+
+-- Client upload links (M3). Only a SHA-256 of the token is stored, so a database
+-- read can't be turned into working links. A link writes to exactly one case.
+create table if not exists upload_links (
+  id          uuid primary key default gen_random_uuid(),
+  firm_id     text not null,
+  case_id     uuid not null references cases(id) on delete cascade,
+  token_hash  text not null unique check (token_hash ~ '^[0-9a-f]{64}$'),
+  created_by  text not null,
+  created_at  timestamptz not null default now(),
+  expires_at  timestamptz not null,
+  revoked_at  timestamptz,
+  file_count  integer not null default 0,
+  byte_count  bigint not null default 0
+);
+create index if not exists upload_links_case_idx on upload_links (case_id, created_at desc);
+
+-- Files clients upload, kept per firm and case. The case document holds only metadata.
+create table if not exists case_files (
+  id              uuid primary key default gen_random_uuid(),
+  firm_id         text not null,
+  case_id         uuid not null references cases(id) on delete cascade,
+  doc_id          text not null,
+  name            text not null check (length(name) between 1 and 300),
+  mime_type       text not null,
+  size            integer not null check (size > 0 and size <= 4000000),
+  sha256          text not null,
+  content         bytea not null,
+  upload_link_id  uuid references upload_links(id) on delete set null,
+  created_at      timestamptz not null default now(),
+  unique (case_id, doc_id)
+);
+create index if not exists case_files_case_idx on case_files (firm_id, case_id);
 
 -- Append-only: the audit trail can be written but never rewritten.
 -- (Rows still go away with their case on delete cascade, which is the

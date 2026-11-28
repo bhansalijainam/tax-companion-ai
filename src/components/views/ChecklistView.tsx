@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertCircle, ArrowRight, BellRing, CheckCircle2, Circle, Loader2, Upload, Wand2 } from 'lucide-react';
+import { AlertCircle, ArrowRight, BellRing, CheckCircle2, Circle, Inbox, Upload, Wand2 } from 'lucide-react';
 import { useCase } from '@/state/CaseContext';
 import { demoPractice } from '@/state/practiceStore';
 import { genericPersona, nextSampleDoc } from '@/fixtures/samplePractice';
@@ -7,6 +7,8 @@ import type { ChecklistItem } from '@/domain/checklist';
 import type { Section } from '@/components/nav';
 import { PageHeader } from '@/components/common';
 import { ProfileFields, ReadyBar, ReminderDialog, StageBadge } from '@/components/practice/parts';
+import { UploadLinkCard } from '@/components/practice/UploadLinkCard';
+import type { UploadLinkInfo } from '@/state/caseStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +16,7 @@ import { cn } from '@/lib/utils';
 
 const ICON = {
   ok: { icon: CheckCircle2, cls: 'text-success', text: 'Received' },
-  received: { icon: Loader2, cls: 'text-accent animate-spin', text: 'Being read' },
+  received: { icon: Inbox, cls: 'text-accent', text: 'Received' },
   issue: { icon: AlertCircle, cls: 'text-destructive', text: 'Needs attention' },
   missing: { icon: Circle, cls: 'text-warning', text: 'Missing' },
 } as const;
@@ -24,11 +26,20 @@ export function ChecklistView({ go }: { go: (s: Section) => void }) {
   const { caseFile, checklist, setProfile, setContact, store, caseStatus, addSampleDocument, logEvent } = useCase();
   const [reminding, setReminding] = useState(false);
   const [phone, setPhone] = useState(caseFile.client.phone ?? '');
+  const [uploadLink, setUploadLink] = useState<UploadLinkInfo | null>(null);
   const locked = caseStatus === 'final';
   const demoId = 'demoClientId' in store ? (store as { demoClientId: string }).demoClientId : null;
   const mandatory = checklist.items.filter((i) => !i.optional);
   const done = mandatory.filter((i) => i.status === 'ok').length;
   const canRemind = checklist.items.some((i) => (i.status === 'missing' && !i.optional) || (i.status === 'issue' && i.note?.startsWith('Could not')));
+
+  /** Reminders carry an upload link; make one if this visit hasn't yet */
+  const openReminder = async () => {
+    if (store.uploadLinks && !uploadLink) {
+      try { setUploadLink(await store.uploadLinks.create()); } catch { /* reminder still works without a link */ }
+    }
+    setReminding(true);
+  };
 
   const simulate = (item: ChecklistItem) => {
     const persona = (demoId && demoPractice.persona(demoId)) || genericPersona(caseFile);
@@ -43,7 +54,7 @@ export function ChecklistView({ go }: { go: (s: Section) => void }) {
       <PageHeader
         title="Document checklist"
         subtitle={`What ${caseFile.client.name.split(' ')[0] || 'this client'} needs to send for FY ${caseFile.client.fy}, worked out from their year. Change the profile and the list updates.`}
-        actions={canRemind && !locked ? <Button onClick={() => setReminding(true)}><BellRing className="w-4 h-4" /> Send reminder</Button> : undefined}
+        actions={canRemind && !locked ? <Button onClick={openReminder}><BellRing className="w-4 h-4" /> Send reminder</Button> : undefined}
       />
 
       <div className="stat-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -93,7 +104,7 @@ export function ChecklistView({ go }: { go: (s: Section) => void }) {
           </ul>
           {(demoId !== null || store.kind === 'local') && (
             <p className="px-5 py-3 text-xs text-muted-foreground border-t border-border">
-              Demo: “Client sends it” plays the client’s side. A sample document arrives, is read, and the checklist, flags and tax update. In the product the client uploads through a private link (next milestone).
+              Demo: “Client sends it” plays the client’s side in one click. To see the client’s own page, create an upload link on the right and open it.
             </p>
           )}
         </section>
@@ -108,6 +119,8 @@ export function ChecklistView({ go }: { go: (s: Section) => void }) {
             </div>
             <ProfileFields value={checklist.profile} onChange={setProfile} disabled={locked} />
           </section>
+
+          {store.uploadLinks && <UploadLinkCard api={store.uploadLinks} disabled={locked} onLink={setUploadLink} current={uploadLink} />}
 
           <section className="stat-card space-y-3" aria-labelledby="contact-h">
             <h2 id="contact-h" className="font-semibold">Contact for reminders</h2>
@@ -129,6 +142,7 @@ export function ChecklistView({ go }: { go: (s: Section) => void }) {
         fy={caseFile.client.fy}
         items={checklist.items}
         phone={caseFile.client.phone}
+        uploadUrl={uploadLink?.url}
         onSent={(channel) => logEvent(channel === 'whatsapp' ? 'reminder.whatsapp' : 'reminder.copied', `Missing: ${checklist.items.filter((i) => i.status === 'missing' && !i.optional).map((i) => i.label).join('; ') || 'none'}`)}
       />
     </div>

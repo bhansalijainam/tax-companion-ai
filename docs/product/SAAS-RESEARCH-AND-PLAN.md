@@ -1,6 +1,6 @@
 # CA-firm SaaS: market research and feature plan
 
-Status: M2 shipped (0.4.0); M3+ proposed · Researched 28 Nov 2026 · Method: ECC `market-research`, `competitive-platform-analysis`, `product-lens` (ICE)
+Status: M2 (0.4.0) and M3 (0.5.0) shipped; M4+ proposed · Researched 28 Nov 2026 · Method: ECC `market-research`, `competitive-platform-analysis`, `product-lens` (ICE)
 
 Labels used below: **[Fact]** is sourced, **[Inference]** is my reading of the facts, **[Rec]** is a recommendation. Vendor pages are treated as claims, not proof.
 
@@ -74,7 +74,7 @@ ICE = Impact × Confidence × Ease, each scored 1–10. Lower effort means a hig
 |---|---|---|---|---|---|---|---|
 | ✅ M1 | Practice workspace | Firms, roles, clients, cases, audit, isolation | — | | | | done |
 | ✅ **M2** | **Client roster + document checklist** | Client profile (salaried / capital gains / rental / business / NRI). Required-document rules per profile. Dashboard matrix of clients × documents (received, missing, extracted, issues). "Ready %" per client | `DocKind`, `caseSummary`, flags | 9 | 9 | 8 | **648** |
-| **M3** | **Client upload portal** | Per-client expiring magic link (no client login). Private Blob storage keyed `firm/client/…`. Auto-extraction on arrival. Status flips on the dashboard | Hybrid extractor, deferred Task 7 | 9 | 8 | 7 | **504** |
+| ✅ **M3** | **Client upload portal** | Per-client expiring magic link (no client login). Private Blob storage keyed `firm/client/…`. Auto-extraction on arrival. Status flips on the dashboard | Hybrid extractor, deferred Task 7 | 9 | 8 | 7 | **504** |
 | **M4** | **Reminders (email → WhatsApp)** | One-click and scheduled nudges listing exactly what's missing. Opt-in capture. Message log in the audit trail. Email via a transactional provider first, then WhatsApp utility templates via Cloud API or a BSP | Flags' `question` field, audit | 8 | 7 | 6 | **336** |
 | **M5** | **Tax-intelligence agents** | Ingest official sources on a schedule → classify relevance → embed (pgvector in the same Postgres) → impact agent matches against client profiles → cited draft recommendations in a CA inbox → approve, then share. A daily digest. Evals for citation accuracy and "no claim without a source" | Agent loop, grounding, evals harness | 9 | 6 | 5 | **270** |
 | **M6** | **Prep-ready pack + new-Act rules** | FY 2025-26 and TY 2026-27 rule sets, old→new section map, ITR form selection, exportable computation and schedules (PDF + JSON) | Engine, trace lines | 8 | 7 | 5 | **280** |

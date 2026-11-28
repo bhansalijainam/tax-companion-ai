@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.0 — Client upload link (SaaS plan M3)
+
+### Added
+- **Private upload link per client.** The CA makes it from the client's checklist (or it is made automatically by **Send reminder**, which puts it in the WhatsApp message). The client opens it on their phone, sees who is asking, what's still needed and why, and uploads against each item. No login.
+- **What the link can do:** add files to one case, nothing else. The client page shows no PAN, amounts or other documents, and cannot open or download files. Links last 14 days, can be turned off, and stop working once the case is filed. Unknown, expired and revoked links all look the same (410).
+- **What the server stores:** only a SHA-256 of each link. Files are kept per firm and case in Postgres (`case_files`), served to firm members only as downloads (`nosniff`, sandboxed CSP).
+- **Checks on every file:** type allowlist (PDF, JPEG, PNG, WebP, text, CSV), magic-byte check against the declared type, 4 MB per file, 40 files and 60 MB per link, file names cleaned.
+- **On arrival:** text files are read by the rules baseline straight away. PDFs and photos are read by live AI when the CA opens the case, or downloaded and read by the CA.
+- **Audit:** uploads are recorded as `client.uploaded` by a new `client` actor that only the server can write; a CA save that tries to add client events is refused. Removing a document deletes its stored file.
+- **Demo:** each demo client gets a demo link (`/practice/:id/upload`) that opens the client's page in the browser, with "Use sample document" for presenting without real files.
+
+### Changed
+- Checklist says "Sent by the client, not read yet" instead of "Being read" for files waiting on live AI.
+- Tests turn off Better Auth's rate limiter (`AUTH_RATE_LIMIT=off`, honoured only when `NODE_ENV=test`) because test files sign up users in parallel.
+
 ## 0.4.0 — Client roster and document checklist (SaaS plan M2)
 
 ### Added

@@ -24,6 +24,7 @@ export const CaseFileSchema = z.object({
     text: str(400_000).optional(), base64: z.undefined().optional(),
     status: z.enum(['queued', 'extracting', 'extracted', 'error']), error: str(2000).optional(),
     extractor: str(200).optional(), latencyMs: z.number().optional(), summary: str(2000).optional(),
+    source: z.literal('client').optional(), uploadedAt: str(40).optional(),
   })).max(200),
   facts: z.array(z.object({
     id: str(200), docId: str(100), field: z.enum(FACT_FIELDS as [string, ...string[]]),
@@ -38,7 +39,7 @@ export const CaseFileSchema = z.object({
     docId: str(100).optional(), amount: z.number().optional(),
   })).max(500),
   flagState: z.record(z.string(), z.object({ status: z.enum(['open', 'resolved', 'dismissed']), note: str(2000).optional(), at: str(40) })),
-  audit: z.array(z.object({ at: str(40), actor: z.enum(['system', 'ai', 'ca']), action: str(100), detail: str(2000) })).max(20_000),
+  audit: z.array(z.object({ at: str(40), actor: z.enum(['system', 'ai', 'ca', 'client']), action: str(100), detail: str(2000) })).max(20_000),
 });
 
 export const parseCaseFile = (v: unknown): CaseFile => CaseFileSchema.parse(v) as CaseFile;

@@ -49,6 +49,7 @@ d('workspace API (Better Auth + Postgres)', () => {
   beforeAll(async () => {
     process.env.BETTER_AUTH_SECRET = 'test-secret-that-is-long-enough-1234567890';
     process.env.BETTER_AUTH_URL = BASE;
+    process.env.AUTH_RATE_LIMIT = 'off';
     pool = new Pool({ connectionString: url });
     await migrateAll(pool);
     A = await newPartner('alpha');

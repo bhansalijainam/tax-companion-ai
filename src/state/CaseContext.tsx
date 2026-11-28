@@ -37,7 +37,7 @@ type Action =
 const now = () => new Date().toISOString();
 
 function reducer(c: CaseFile, a: Action): CaseFile {
-  const audit = (actor: 'system' | 'ai' | 'ca', action: string, detail: string) => [...c.audit, { at: now(), actor, action, detail }];
+  const audit = (actor: 'system' | 'ai' | 'ca' | 'client', action: string, detail: string) => [...c.audit, { at: now(), actor, action, detail }];
   switch (a.type) {
     case 'reset':
       return a.caseFile;
@@ -202,12 +202,28 @@ function useCaseState(store: CaseStore) {
   const runExtraction = useCallback(async (doc: CaseDocument) => {
     dispatch({ type: 'patchDocument', id: doc.id, patch: { status: 'extracting', error: undefined } });
     try {
+      // A client's PDF or photo lives on the server, not in the case; fetch it to read it
+      if (!doc.text && !doc.base64 && doc.source === 'client' && store.fetchFile) {
+        doc = { ...doc, base64: await store.fetchFile(doc.id) };
+      }
       const run = await extractDocument(doc, mode);
       dispatch({ type: 'applyExtraction', docId: doc.id, applied: applyExtraction(doc, run) });
     } catch (e) {
       dispatch({ type: 'patchDocument', id: doc.id, patch: { status: 'error', error: e instanceof Error ? e.message : String(e) } });
     }
-  }, [mode]);
+  }, [mode, store]);
+
+  // Live AI reads files clients sent through their upload link as soon as the case opens
+  const autoRead = useRef(new Set<string>());
+  useEffect(() => {
+    if (!ready || mode !== 'live' || caseStatus === 'final') return;
+    for (const d of caseRef.current.documents) {
+      if (d.source === 'client' && d.status === 'queued' && !autoRead.current.has(d.id)) {
+        autoRead.current.add(d.id);
+        void runExtraction(d);
+      }
+    }
+  }, [ready, mode, caseStatus, caseFile.documents.length, runExtraction]);
 
   const uploadFiles = useCallback(async (files: File[]) => {
     for (const file of files) {

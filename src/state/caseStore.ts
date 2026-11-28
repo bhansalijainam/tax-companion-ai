@@ -19,6 +19,16 @@ export interface LoadedCase {
   role?: Role;
 }
 
+export interface UploadLinkInfo { url: string; expiresAt: string; }
+export interface UploadLinkStatus { active: number; files: number; latestExpiresAt?: string; }
+
+/** Client upload links (M3). The plaintext link exists only in the response that creates it. */
+export interface UploadLinkApi {
+  create(): Promise<UploadLinkInfo>;
+  status(): Promise<UploadLinkStatus>;
+  revokeAll(): Promise<number>;
+}
+
 export interface CaseStore {
   readonly kind: 'local' | 'api';
   /** Synchronous first value, if available without a network round trip */
@@ -26,6 +36,9 @@ export interface CaseStore {
   load(): Promise<LoadedCase>;
   save(data: CaseFile): Promise<SaveResult>;
   setStatus?(status: CaseStatus): Promise<SaveResult & { status?: CaseStatus }>;
+  uploadLinks?: UploadLinkApi;
+  /** base64 of a client-uploaded file kept on the server, for extraction */
+  fetchFile?(docId: string): Promise<string>;
 }
 
 const STORAGE_KEY = 'tax-companion:case:v1';
@@ -91,6 +104,35 @@ export class ApiCaseStore implements CaseStore {
     } catch {
       return { ok: false, reason: 'error', message: 'Could not reach the server. Your changes are kept on this page.' };
     }
+  }
+
+  readonly uploadLinks: UploadLinkApi = {
+    create: async () => {
+      const body = await this.call('upload-links', { method: 'POST' });
+      return { url: `${location.origin}/u/${body.token}`, expiresAt: body.expiresAt };
+    },
+    status: async () => {
+      const { links } = (await this.call('upload-links')) as { links: { expires_at: string; revoked_at: string | null; file_count: number }[] };
+      const active = links.filter((l) => !l.revoked_at && new Date(l.expires_at) > new Date());
+      return { active: active.length, files: links.reduce((n, l) => n + l.file_count, 0), latestExpiresAt: active[0]?.expires_at };
+    },
+    revokeAll: async () => (await this.call('upload-links', { method: 'DELETE' })).revoked,
+  };
+
+  async fetchFile(docId: string): Promise<string> {
+    const res = await this.fetchImpl(`/api/cases/${encodeURIComponent(this.caseId)}/files/${encodeURIComponent(docId)}`, { credentials: 'include' });
+    if (!res.ok) throw new Error(`Could not fetch the client's file (${res.status})`);
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+
+  private async call(sub: string, init: RequestInit = {}) {
+    const res = await this.fetchImpl(`/api/cases/${encodeURIComponent(this.caseId)}/${sub}`, { credentials: 'include', ...init });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error ?? `Request failed (${res.status})`);
+    return body;
   }
 
   async setStatus(status: CaseStatus) {

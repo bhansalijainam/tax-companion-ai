@@ -10,6 +10,7 @@ import { lazy, Suspense } from "react";
 // The signed-in workspace loads separately, so the public demo stays light
 const WorkspaceApp = lazy(() => import("./pages/workspace/WorkspaceApp"));
 const DemoPractice = lazy(() => import("./pages/practice/DemoPractice"));
+const TokenUploadRoute = lazy(() => import("./pages/upload/UploadRoutes").then((m) => ({ default: m.TokenUploadRoute })));
 import { CaseProvider } from "./state/CaseContext";
 import { ThemeProvider } from "next-themes";
 
@@ -44,6 +45,14 @@ const App = () => (
             element={
               <Suspense fallback={<div className="min-h-screen bg-background" />}>
                 <DemoPractice />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/u/:token"
+            element={
+              <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                <TokenUploadRoute />
               </Suspense>
             }
           />

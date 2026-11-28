@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2, RefreshCw, Trash2, Eye } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, RefreshCw, Trash2, Eye, Download } from 'lucide-react';
 import { useCase } from '@/state/CaseContext';
 import { PageHeader } from '@/components/common';
 import type { Section } from '@/components/nav';
@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { cn } from '@/lib/utils';
 
 export function DocumentsView({ go }: { go: (s: Section) => void }) {
-  const { caseFile, uploadFiles, runExtraction, dispatch, mode, startEmpty, loadSample } = useCase();
+  const { caseFile, uploadFiles, runExtraction, dispatch, mode, startEmpty, loadSample, store } = useCase();
+  const caseId = 'caseId' in store ? (store as { caseId: string }).caseId : null;
   const [dragging, setDragging] = useState(false);
   const [viewing, setViewing] = useState<CaseDocument | null>(null);
 
@@ -78,17 +79,26 @@ export function DocumentsView({ go }: { go: (s: Section) => void }) {
                   : <FileText className="w-5 h-5 text-muted-foreground" />}
               </div>
               <div className="flex-1 min-w-[200px]">
-                <p className="font-medium text-sm truncate">{d.name}</p>
+                <p className="font-medium text-sm truncate">
+                  {d.name}
+                  {d.source === 'client' && <span className="ml-2 rounded-full bg-accent/10 text-accent px-1.5 py-0.5 text-[11px] font-medium align-middle">from client</span>}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {DOC_KIND_LABEL[d.kind]} · {formatFileSize(d.size)}
                   {d.status === 'extracted' && ` · ${factsFor(d.id)} facts · ${d.extractor}${d.latencyMs ? ` · ${(d.latencyMs / 1000).toFixed(1)}s` : ''}`}
                   {d.status === 'extracting' && ' · extracting…'}
+                  {d.status === 'queued' && d.source === 'client' && (mode === 'live' ? ' · reading…' : ' · not read yet: needs live AI for PDFs and photos')}
                 </p>
                 {d.error && <p className="text-xs text-destructive mt-1">{d.error}</p>}
               </div>
               <div className="flex items-center gap-1">
                 {d.text && (
                   <Button variant="ghost" size="icon" onClick={() => setViewing(d)} title="View text"><Eye className="w-4 h-4" /></Button>
+                )}
+                {d.source === 'client' && caseId && (
+                  <Button variant="ghost" size="icon" asChild title="Download the client's file">
+                    <a href={`/api/cases/${encodeURIComponent(caseId)}/files/${encodeURIComponent(d.id)}`} download><Download className="w-4 h-4" /></a>
+                  </Button>
                 )}
                 <Button variant="ghost" size="icon" disabled={d.status === 'extracting'} onClick={() => void runExtraction(d)} title={`Re-extract with ${mode === 'live' ? 'live AI' : 'rules baseline'}`}>
                   <RefreshCw className="w-4 h-4" />

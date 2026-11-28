@@ -10,7 +10,8 @@ Open `/practice` on the deployed site (no login). Press **Reset demo** before yo
 3. **Checklist.** Open *Neha Kapoor*, then **Checklist**: two employers, so two Form 16s; one is in. Untick and tick profile boxes to show the list change.
 4. **Client sends it.** On *Vikram Mehta*'s checklist press **Client sends it** for the capital-gains statement. It is read, the gains appear in **Review facts** and **Tax computation**, and the dashboard moves him to *Needs review*.
 5. **Issues.** Open *Rahul Sharma*: documents are in, but red dots mean high-priority questions (cash deposit, AIS interest mismatch). Open **Flags** to show the client question the system drafted.
-6. **New client.** **New client** → tick what their year looks like → the checklist is built for you.
+6. **The client's side.** On *Fatima Khan*'s checklist press **Create link**, then open it: this is what the client sees on their phone from WhatsApp. Press **Use sample document** on *Rent receipts*, go back to the CA tab and reload: it's received.
+7. **New client.** **New client** → tick what their year looks like → the checklist is built for you.
 
 ## Questions to ask (write the answers down verbatim)
 

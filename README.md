@@ -27,7 +27,7 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:8080/practice for the multi-client practice dashboard (ten fictional clients, document checklists, WhatsApp reminders), or http://localhost:8080 for the single-case AI walkthrough. Without an API key it runs in **demo mode**: documents are read by a rules baseline and the assistant is a scripted provider. The tools, tax engine, verification checks and UI are the same ones live mode uses.
+Then open http://localhost:8080/practice for the multi-client practice dashboard (ten fictional clients, document checklists, WhatsApp reminders, client upload links), or http://localhost:8080 for the single-case AI walkthrough. Without an API key it runs in **demo mode**: documents are read by a rules baseline and the assistant is a scripted provider. The tools, tax engine, verification checks and UI are the same ones live mode uses.
 
 For **live mode**, put `ANTHROPIC_API_KEY=...` in `.env.local` and restart. The key stays on the server: Vite serves the same handlers as the Vercel functions in `api/`.
 
@@ -48,7 +48,7 @@ At `/app`, a CA firm can sign in, see every client's document checklist and stag
 DATABASE_URL=postgres://... BETTER_AUTH_SECRET=$(openssl rand -base64 32) npm run db:migrate
 ```
 
-Then run `npm run dev` with the same variables and open http://localhost:8080/app. Design decisions are in [`docs/adr/0001-db-and-auth.md`](docs/adr/0001-db-and-auth.md). The plan and its status are in [`.claude/plans/practice-workspace.plan.md`](.claude/plans/practice-workspace.plan.md).
+Then run `npm run dev` with the same variables and open http://localhost:8080/app. Design decisions are in [`docs/adr/0001-db-and-auth.md`](docs/adr/0001-db-and-auth.md) and [`docs/adr/0002-client-file-storage.md`](docs/adr/0002-client-file-storage.md). The plan and its status are in [`.claude/plans/practice-workspace.plan.md`](.claude/plans/practice-workspace.plan.md).
 
 ## Architecture
 

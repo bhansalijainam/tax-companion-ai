@@ -86,12 +86,14 @@ export function ProfileFields({ value, onChange, disabled }: { value: ClientProf
  * automated sending with templates and opt-in comes in M4.
  */
 export function ReminderDialog({
-  open, onOpenChange, clientName, fy, items, phone, firmName, onSent,
+  open, onOpenChange, clientName, fy, items, phone, firmName, onSent, uploadUrl,
 }: {
   open: boolean; onOpenChange: (o: boolean) => void; clientName: string; fy: string;
   items: ChecklistSummary['items']; phone?: string; firmName?: string; onSent?: (channel: 'whatsapp' | 'copy') => void;
+  /** When set, the message carries the client's private upload link */
+  uploadUrl?: string;
 }) {
-  const initial = useMemo(() => reminderMessage({ clientName, fy, items, firmName }), [clientName, fy, items, firmName]);
+  const initial = useMemo(() => reminderMessage({ clientName, fy, items, firmName, uploadUrl }), [clientName, fy, items, firmName, uploadUrl]);
   const [text, setText] = useState(initial);
   const [to, setTo] = useState(phone ?? '');
   const [copied, setCopied] = useState(false);

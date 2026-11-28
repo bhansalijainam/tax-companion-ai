@@ -63,6 +63,9 @@ export interface CaseDocument {
   extractor?: string;
   latencyMs?: number;
   summary?: string;
+  /** 'client': arrived through a client upload link (M3); the file is stored server-side */
+  source?: 'client';
+  uploadedAt?: string;
 }
 
 export type FactOrigin = 'llm' | 'rules' | 'human';
@@ -116,7 +119,8 @@ export interface FlagState {
 
 export interface AuditEvent {
   at: string;
-  actor: 'system' | 'ai' | 'ca';
+  /** 'client' entries are written only by the server, for uploads through a client link */
+  actor: 'system' | 'ai' | 'ca' | 'client';
   action: string;
   detail: string;
 }
