@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 const STATUS_LABEL = { draft: 'Draft', in_review: 'In review', final: 'Final' } as const;
 
 /** Header controls for a server-saved case: back to clients, save state, case status. */
-export function WorkspaceBar() {
+export function WorkspaceBar({ backTo = '/app' }: { backTo?: string }) {
   const { saveState, caseStatus, role, changeStatus } = useCase();
   const save =
     saveState === 'saving' ? { icon: Loader2, text: 'Saving…', cls: 'text-muted-foreground', spin: true }
@@ -19,7 +19,7 @@ export function WorkspaceBar() {
   return (
     <div className="flex items-center gap-2">
       <Button variant="ghost" size="sm" asChild>
-        <Link to="/app"><ArrowLeft className="w-4 h-4" /><span className="hidden sm:inline">Clients</span></Link>
+        <Link to={backTo}><ArrowLeft className="w-4 h-4" /><span className="hidden sm:inline">All clients</span></Link>
       </Button>
       {caseStatus && (
         <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', caseStatus === 'final' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground')}>

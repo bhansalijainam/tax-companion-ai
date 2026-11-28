@@ -4,6 +4,7 @@ import { MOBILE_NAV, type Section } from '@/components/nav';
 import { ModeIndicator } from '@/components/common';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { DashboardView } from '@/components/views/DashboardView';
+import { ChecklistView } from '@/components/views/ChecklistView';
 import { DocumentsView } from '@/components/views/DocumentsView';
 import { ReviewView } from '@/components/views/ReviewView';
 import { FlagsView } from '@/components/views/FlagsView';
@@ -25,8 +26,13 @@ function sectionFromHash(): Section {
   return SECTIONS.has(h) ? h : 'dashboard';
 }
 
-/** `workspace`: a server-saved firm case (signed in). Without it: the public demo. */
-const Index = ({ workspace = false }: { workspace?: boolean }) => {
+/**
+ * `workspace`: a server-saved firm case (signed in).
+ * `practiceDemo`: one client of the public demo practice (/practice).
+ * Neither: the single-case public demo at /.
+ */
+const Index = ({ workspace = false, practiceDemo = false }: { workspace?: boolean; practiceDemo?: boolean }) => {
+  const backTo = practiceDemo ? '/practice' : '/app';
   const [active, setActive] = useState<Section>(sectionFromHash);
   const { loadSample, caseFile, ready, loadError } = useCase();
 
@@ -44,6 +50,7 @@ const Index = ({ workspace = false }: { workspace?: boolean }) => {
 
   const views: Record<Section, JSX.Element> = {
     dashboard: <DashboardView go={go} />,
+    checklist: <ChecklistView go={go} />,
     documents: <DocumentsView go={go} />,
     review: <ReviewView />,
     flags: <FlagsView />,
@@ -60,7 +67,7 @@ const Index = ({ workspace = false }: { workspace?: boolean }) => {
         <div className="space-y-3">
           <p className="font-medium">This case could not be opened.</p>
           <p className="text-sm text-muted-foreground">{loadError}</p>
-          <a className="text-sm underline text-accent" href="/app">Back to clients</a>
+          <a className="text-sm underline text-accent" href={backTo}>Back to clients</a>
         </div>
       </div>
     );
@@ -81,9 +88,10 @@ const Index = ({ workspace = false }: { workspace?: boolean }) => {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {workspace ? <WorkspaceBar /> : <ModeIndicator />}
+              {workspace || practiceDemo ? <WorkspaceBar backTo={backTo} /> : null}
+              {!workspace && <ModeIndicator compact={practiceDemo} />}
               <ThemeToggle />
-              {!workspace && (
+              {!workspace && !practiceDemo && (
                 <Button variant="ghost" size="sm" onClick={loadSample} title="Reset to the sample case">
                   <RotateCcw className="w-4 h-4" />
                   <span className="hidden sm:inline">Reset demo</span>
@@ -106,7 +114,7 @@ const Index = ({ workspace = false }: { workspace?: boolean }) => {
 
         <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
           <div className="mx-auto max-w-6xl">
-            {workspace && <SaveBanner />}
+            {(workspace || practiceDemo) && <SaveBanner />}
             {views[active]}
           </div>
         </main>

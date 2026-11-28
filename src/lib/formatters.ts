@@ -42,3 +42,6 @@ export const getSectionBadgeClass = (section: string): string => {
 
 /** ₹ with Indian digit grouping; negative values use a true minus sign. */
 export const inr = (n: number): string => (n < 0 ? '−' : '') + '₹' + Math.abs(Math.round(n)).toLocaleString('en-IN');
+
+/** PAN shown as ABCDE••••F: enough to tell clients apart, not enough to reuse */
+export const maskPan = (p: string | null) => (p ? `${p.slice(0, 5)}••••${p.slice(-1)}` : '—');

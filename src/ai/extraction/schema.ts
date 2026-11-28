@@ -1,10 +1,8 @@
 import { z } from 'zod';
 import { FACT_FIELDS, FactField } from '../../domain/fields.js';
-import type { DocKind } from '../../domain/types.js';
+import { DOC_KINDS, type DocKind } from '../../domain/types.js';
 
-export const DOC_KINDS: DocKind[] = [
-  'form16', 'bank-statement', 'investment-proof', 'insurance', 'loan-certificate', 'capital-gains', 'ais', 'rent-receipt', 'other',
-];
+export { DOC_KINDS };
 
 /** What any extractor (LLM or rules) returns for one document, before grounding checks. */
 export const ExtractionOutput = z.object({

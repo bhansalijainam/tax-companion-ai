@@ -1,7 +1,8 @@
-export type Section = 'dashboard' | 'documents' | 'review' | 'flags' | 'tax' | 'chat' | 'report' | 'evals' | 'architecture';
+export type Section = 'dashboard' | 'checklist' | 'documents' | 'review' | 'flags' | 'tax' | 'chat' | 'report' | 'evals' | 'architecture';
 
 export const MOBILE_NAV: { id: Section; label: string }[] = [
   { id: 'dashboard', label: 'Overview' },
+  { id: 'checklist', label: 'Checklist' },
   { id: 'documents', label: 'Documents' },
   { id: 'review', label: 'Review' },
   { id: 'flags', label: 'Flags' },

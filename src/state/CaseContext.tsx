@@ -6,7 +6,9 @@ import { detectKind } from '@/ai/extraction/rulesExtractor';
 import { caseSummary } from '@/domain/caseFile';
 import type { FactField } from '@/domain/fields';
 import { FIELDS } from '@/domain/fields';
-import type { CaseDocument, CaseFile, Fact, FlagState } from '@/domain/types';
+import type { CaseDocument, CaseFile, ClientProfile, Fact, FlagState } from '@/domain/types';
+import { evaluateChecklist } from '@/domain/checklist';
+import type { SampleDocument } from '@/fixtures/sampleDocuments';
 import { CaseStatus, CaseStore, LocalCaseStore, Role, SaveResult } from './caseStore';
 
 export interface ChatMessage {
@@ -27,7 +29,10 @@ type Action =
   | { type: 'setFactStatus'; ids: string[]; status: Fact['status'] }
   | { type: 'editFact'; id: string; value: number | boolean | string }
   | { type: 'addFact'; fact: Fact }
-  | { type: 'setFlagState'; id: string; status: FlagState['status']; note?: string };
+  | { type: 'setFlagState'; id: string; status: FlagState['status']; note?: string }
+  | { type: 'setProfile'; profile: ClientProfile }
+  | { type: 'setContact'; phone?: string; email?: string }
+  | { type: 'log'; action: string; detail: string };
 
 const now = () => new Date().toISOString();
 
@@ -85,6 +90,16 @@ function reducer(c: CaseFile, a: Action): CaseFile {
         flagState: { ...c.flagState, [a.id]: { status: a.status, note: a.note, at: now() } },
         audit: audit('ca', `flag.${a.status}`, `${a.id}${a.note ? ` — ${a.note}` : ''}`),
       };
+    case 'setProfile': {
+      const changed = (Object.keys(a.profile) as (keyof ClientProfile)[]).filter((k) => c.profile?.[k] !== a.profile[k]);
+      if (!changed.length && c.profile) return c;
+      return { ...c, profile: a.profile, audit: audit('ca', 'profile.updated', changed.map((k) => `${k}: ${String(a.profile[k])}`).join(', ') || 'profile confirmed') };
+    }
+    case 'log':
+      return { ...c, audit: audit('ca', a.action, a.detail) };
+    case 'setContact':
+      if ((a.phone ?? '') === (c.client.phone ?? '') && (a.email ?? '') === (c.client.email ?? '')) return c;
+      return { ...c, client: { ...c.client, phone: a.phone || undefined, email: a.email || undefined }, audit: audit('ca', 'contact.updated', 'Client contact details changed') };
   }
 }
 
@@ -182,6 +197,7 @@ function useCaseState(store: CaseStore) {
   const liveAllowed = status?.live && (!status.signInRequired || store.kind === 'api');
   const mode: Mode = liveAllowed && !preferDemo ? 'live' : 'demo';
   const summary = useMemo(() => caseSummary(caseFile), [caseFile]);
+  const checklist = useMemo(() => evaluateChecklist(caseFile, caseStatus), [caseFile, caseStatus]);
 
   const runExtraction = useCallback(async (doc: CaseDocument) => {
     dispatch({ type: 'patchDocument', id: doc.id, patch: { status: 'extracting', error: undefined } });
@@ -208,6 +224,13 @@ function useCaseState(store: CaseStore) {
       dispatch({ type: 'addDocument', doc });
       void runExtraction(doc);
     }
+  }, [runExtraction]);
+
+  /** Demo only: a sample document arrives as if the client had uploaded it. */
+  const addSampleDocument = useCallback((d: SampleDocument) => {
+    const doc: CaseDocument = { id: d.id, name: d.name, kind: d.kind, mimeType: 'text/plain', size: d.text.length, text: d.text, status: 'queued' };
+    dispatch({ type: 'addDocument', doc });
+    void runExtraction(doc);
   }, [runExtraction]);
 
   const sendChat = useCallback(async (text: string) => {
@@ -237,9 +260,12 @@ function useCaseState(store: CaseStore) {
 
   return {
     store, ready, loadError, caseStatus, role, saveState, saveMessage, changeStatus,
-    caseFile, dispatch, summary, status, mode, preferDemo, setPreferDemo,
+    caseFile, dispatch, summary, checklist, status, mode, preferDemo, setPreferDemo,
     chat, chatBusy, sendChat, clearChat: () => setChat([]),
-    uploadFiles, runExtraction, addManualFact,
+    uploadFiles, runExtraction, addManualFact, addSampleDocument,
+    setProfile: (profile: ClientProfile) => dispatch({ type: 'setProfile', profile }),
+    setContact: (phone?: string, email?: string) => dispatch({ type: 'setContact', phone, email }),
+    logEvent: (action: string, detail: string) => dispatch({ type: 'log', action, detail }),
     loadSample: () => { dispatch({ type: 'reset', caseFile: buildSampleCase() }); setChat([]); },
     startEmpty: () => { dispatch({ type: 'reset', caseFile: emptyCase() }); setChat([]); },
   };

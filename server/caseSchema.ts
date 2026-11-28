@@ -1,15 +1,26 @@
 import { z } from 'zod';
 import { FACT_FIELDS } from '../src/domain/fields.js';
-import type { CaseFile } from '../src/domain/types.js';
+import { DOC_KINDS, type CaseFile, type DocKind } from '../src/domain/types.js';
 
-const DOC_KINDS = ['form16', 'bank-statement', 'investment-proof', 'insurance', 'loan-certificate', 'capital-gains', 'ais', 'rent-receipt', 'other'] as const;
 const str = (max: number) => z.string().max(max);
+
+export const ClientProfileSchema = z.object({
+  salaried: z.boolean(), employers: z.number().int().min(0).max(10),
+  paysRent: z.boolean(), homeLoan: z.boolean(), educationLoan: z.boolean(), rentalIncome: z.boolean(),
+  capitalGains: z.boolean(), business: z.boolean(), investments80C: z.boolean(), healthInsurance: z.boolean(),
+});
+/** Digits, spaces, +, - and brackets only; empty allowed */
+const phone = z.string().max(20).regex(/^[0-9+()\-\s]*$/, 'Phone number can only contain digits, spaces, +, - and brackets');
 
 /** Server-side validation of a case document before it is stored. Binaries are not accepted. */
 export const CaseFileSchema = z.object({
-  client: z.object({ name: str(200), pan: str(20), fy: str(10), ay: str(10), employer: str(200).optional() }),
+  client: z.object({
+    name: str(200), pan: str(20), fy: str(10), ay: str(10), employer: str(200).optional(),
+    phone: phone.optional(), email: z.string().max(200).email().optional().or(z.literal('')),
+  }),
+  profile: ClientProfileSchema.optional(),
   documents: z.array(z.object({
-    id: str(100), name: str(300), kind: z.enum(DOC_KINDS), mimeType: str(100), size: z.number().nonnegative(),
+    id: str(100), name: str(300), kind: z.enum(DOC_KINDS as [DocKind, ...DocKind[]]), mimeType: str(100), size: z.number().nonnegative(),
     text: str(400_000).optional(), base64: z.undefined().optional(),
     status: z.enum(['queued', 'extracting', 'extracted', 'error']), error: str(2000).optional(),
     extractor: str(200).optional(), latencyMs: z.number().optional(), summary: str(2000).optional(),

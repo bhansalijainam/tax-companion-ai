@@ -9,6 +9,8 @@ export type DocKind =
   | 'capital-gains'
   | 'ais'
   | 'rent-receipt'
+  | 'business-financials'
+  | 'property-docs'
   | 'other';
 
 export const DOC_KIND_LABEL: Record<DocKind, string> = {
@@ -20,8 +22,31 @@ export const DOC_KIND_LABEL: Record<DocKind, string> = {
   'capital-gains': 'Capital-gains statement',
   ais: 'AIS / 26AS',
   'rent-receipt': 'Rent receipt',
+  'business-financials': 'Business P&L / books',
+  'property-docs': 'Property documents',
   other: 'Other',
 };
+
+/** Every document kind, in display order. Single source for schemas and validators. */
+export const DOC_KINDS = Object.keys(DOC_KIND_LABEL) as DocKind[];
+
+/**
+ * What the client's year looks like. Drives which documents are required (see checklist.ts).
+ * Stored per case, because income sources change from year to year.
+ */
+export interface ClientProfile {
+  salaried: boolean;
+  /** Employers during the year; one Form 16 is expected from each */
+  employers: number;
+  paysRent: boolean;
+  homeLoan: boolean;
+  educationLoan: boolean;
+  rentalIncome: boolean;
+  capitalGains: boolean;
+  business: boolean;
+  investments80C: boolean;
+  healthInsurance: boolean;
+}
 
 export interface CaseDocument {
   id: string;
@@ -97,7 +122,14 @@ export interface AuditEvent {
 }
 
 export interface CaseFile {
-  client: { name: string; pan: string; fy: string; ay: string; employer?: string };
+  client: {
+    name: string; pan: string; fy: string; ay: string; employer?: string;
+    /** For reminders. Consent capture arrives with WhatsApp sending (M4). */
+    phone?: string;
+    email?: string;
+  };
+  /** Absent on cases saved before M2; inferProfile() fills the gap from the documents */
+  profile?: ClientProfile;
   documents: CaseDocument[];
   facts: Fact[];
   /** Ambiguities raised by the model during extraction */

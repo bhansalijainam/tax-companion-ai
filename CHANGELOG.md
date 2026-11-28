@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 — Client roster and document checklist (SaaS plan M2)
+
+### Added
+- **Practice dashboard.** Every client on one screen, with a stage (not started → awaiting documents → needs review → ready → filed), a readiness bar, one dot per required document, and the next action. Filter by stage, search by name.
+- **Document checklist per client.** The CA ticks what the client's year looks like (salary, employers, rent, loans, capital gains, business, 80C, health insurance, rental income). The required documents follow from that, each with a one-line reason the client can understand. Partial receipt counts, e.g. "Form 16: 1 of 2 received".
+- **Reminders that list only what's missing.** One click writes the message and opens it in the CA's own WhatsApp (wa.me link, no API needed yet), or copies it. Reminders sent from a case are recorded in the audit trail.
+- **Public demo practice at `/practice`.** Ten fictional clients at different stages, stored per client in the browser. "Client sends it" plays the client's side: a sample document arrives, is read, and the checklist, flags and tax update.
+- Server: `cases.summary` holds the checklist summary, recomputed on every save, so the dashboard never loads full case documents. Older cases are backfilled on first list. Client profile and phone are validated on create and save.
+- New document kinds: business P&L / books, property documents. Rules extraction reads net profit from a P&L.
+
+### Notes
+- Cases saved before 0.4.0 have no profile. It is inferred from their documents and the checklist says so until the CA confirms it.
+- Automatic WhatsApp/email sending with client opt-in is M4; the client upload link is M3.
+
 ## 0.3.0 — Practice workspace (PRD milestone 1)
 
 ### Added

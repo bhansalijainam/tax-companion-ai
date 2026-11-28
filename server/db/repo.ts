@@ -7,6 +7,7 @@
  */
 import type { Pool, PoolClient } from 'pg';
 import type { CaseFile } from '../../src/domain/types.js';
+import { evaluateChecklist, summarizeChecklist, applyStatus, type ChecklistSummary } from '../../src/domain/checklist.js';
 
 export class NotFoundError extends Error { constructor() { super('Not found'); this.name = 'NotFoundError'; } }
 export class ConflictError extends Error { constructor() { super('This case was changed by someone else. Reload to see the latest version.'); this.name = 'ConflictError'; } }
@@ -18,12 +19,14 @@ export type Role = 'partner' | 'preparer';
 export type CaseStatus = 'draft' | 'in_review' | 'final';
 
 export interface ClientRow { id: string; name: string; pan: string | null; created_at: string; }
-export interface ClientListItem extends ClientRow { case_id: string | null; fy: string | null; status: CaseStatus | null; updated_at: string | null; }
+export interface ClientListItem extends ClientRow { case_id: string | null; fy: string | null; status: CaseStatus | null; updated_at: string | null; summary: ChecklistSummary | null; }
 export interface CaseRow { id: string; client_id: string; fy: string; status: CaseStatus; version: number; data: CaseFile; updated_by: string; updated_at: string; }
 export interface AuditRow { id: string; actor_user_id: string | null; actor_kind: string; action: string; detail: string; at: string; }
 
 /** Binary payloads never go into the case document. */
 const stripBinaries = (c: CaseFile): CaseFile => ({ ...c, documents: c.documents.map(({ base64: _b, ...d }) => d) });
+/** Status-independent checklist summary; "filed" is applied at read time from the case status. */
+const summaryOf = (c: CaseFile): ChecklistSummary => summarizeChecklist(evaluateChecklist(c));
 
 export class Repo {
   constructor(private pool: Pool) {}
@@ -46,10 +49,10 @@ export class Repo {
   async listClients(firmId: string, search?: string): Promise<ClientListItem[]> {
     const { rows } = await this.pool.query<ClientListItem>(
       `select cl.id, cl.name, cl.pan, cl.created_at,
-              cs.id as case_id, cs.fy, cs.status, cs.updated_at
+              cs.id as case_id, cs.fy, cs.status, cs.updated_at, cs.summary
          from clients cl
          left join lateral (
-           select id, fy, status, updated_at from cases
+           select id, fy, status, updated_at, summary from cases
             where cases.client_id = cl.id and cases.firm_id = $1
             order by fy desc limit 1
          ) cs on true
@@ -58,12 +61,24 @@ export class Repo {
         limit 500`,
       [firmId, search?.trim() || null],
     );
-    return rows;
+    // Backfill summaries for cases saved before M2 (one-off per case)
+    const stale = rows.filter((r) => r.case_id && !r.summary);
+    if (stale.length) {
+      const { rows: cases } = await this.pool.query<{ id: string; data: CaseFile }>(
+        `select id, data from cases where firm_id = $1 and id = any($2::uuid[])`, [firmId, stale.map((r) => r.case_id)],
+      );
+      for (const cs of cases) {
+        const summary = summaryOf(cs.data);
+        await this.pool.query(`update cases set summary = $1 where id = $2 and firm_id = $3`, [summary, cs.id, firmId]);
+        for (const r of stale) if (r.case_id === cs.id) r.summary = summary;
+      }
+    }
+    return rows.map((r) => (r.summary ? { ...r, summary: applyStatus(r.summary, r.status) } : r));
   }
 
   async createClient(
     firmId: string, userId: string,
-    input: { name: string; pan?: string | null; fy: string },
+    input: { name: string; pan?: string | null; fy: string; phone?: string; profile?: CaseFile['profile'] },
     initial: CaseFile,
   ): Promise<{ client: ClientRow; caseId: string }> {
     return this.tx(async (c) => {
@@ -74,12 +89,13 @@ export class Repo {
       );
       const data: CaseFile = stripBinaries({
         ...initial,
-        client: { ...initial.client, name: input.name, pan: input.pan || '', fy: input.fy, ay: nextAy(input.fy) },
+        client: { ...initial.client, name: input.name, pan: input.pan || '', fy: input.fy, ay: nextAy(input.fy), ...(input.phone ? { phone: input.phone } : {}) },
+        ...(input.profile ? { profile: input.profile } : {}),
         audit: [],
       });
       const { rows: [cs] } = await c.query<{ id: string }>(
-        `insert into cases (firm_id, client_id, fy, data, updated_by) values ($1, $2, $3, $4, $5) returning id`,
-        [firmId, client.id, input.fy, data, userId],
+        `insert into cases (firm_id, client_id, fy, data, updated_by, summary) values ($1, $2, $3, $4, $5, $6) returning id`,
+        [firmId, client.id, input.fy, data, userId, summaryOf(data)],
       );
       await c.query(
         `insert into audit_events (firm_id, case_id, actor_user_id, actor_kind, action, detail) values ($1, $2, $3, 'ca', 'case.created', $4)`,
@@ -122,8 +138,8 @@ export class Repo {
 
       const next = cur.version + 1;
       await c.query(
-        `update cases set data = $1, version = $2, updated_by = $3, updated_at = now() where id = $4 and firm_id = $5`,
-        [stripBinaries(data), next, userId, caseId, firmId],
+        `update cases set data = $1, version = $2, updated_by = $3, updated_at = now(), summary = $6 where id = $4 and firm_id = $5`,
+        [stripBinaries(data), next, userId, caseId, firmId, summaryOf(data)],
       );
       for (const e of after.slice(before.length)) {
         await c.query(

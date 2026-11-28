@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { Pool } from 'pg';
 import { emptyCase } from '../src/ai/pipeline.js';
 import { getAuth, resolveMember, type Member } from './auth.js';
-import { parseCaseFile } from './caseSchema.js';
+import { ClientProfileSchema, parseCaseFile } from './caseSchema.js';
 import { getPool } from './db/pool.js';
 import { ConflictError, ForbiddenError, LockedError, NotFoundError, Repo, ValidationError } from './db/repo.js';
 
@@ -51,6 +51,8 @@ const CreateClient = z.object({
   name: z.string().trim().min(1).max(200),
   pan: z.string().trim().toUpperCase().regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'PAN must look like ABCDE1234F').optional().or(z.literal('')),
   fy: z.string().regex(/^\d{4}-\d{2}$/).default('2024-25'),
+  phone: z.string().trim().max(20).regex(/^[0-9+()\-\s]*$/, 'Phone number can only contain digits, spaces, +, - and brackets').optional(),
+  profile: ClientProfileSchema.optional(),
 });
 const SaveCase = z.object({ version: z.number().int().positive(), data: z.unknown() });
 const SetStatus = z.object({ status: z.enum(['draft', 'in_review', 'final']) });
@@ -62,7 +64,7 @@ export const clientsHandler: Handler = async (req, m, repo) => {
   }
   if (req.method === 'POST') {
     const body = CreateClient.parse(await readJson(req));
-    const out = await repo.createClient(m.firmId, m.userId, { name: body.name, pan: body.pan || null, fy: body.fy }, emptyCase());
+    const out = await repo.createClient(m.firmId, m.userId, { name: body.name, pan: body.pan || null, fy: body.fy, phone: body.phone || undefined, profile: body.profile }, emptyCase());
     return json(out, 201);
   }
   return json({ error: 'Method not allowed' }, 405);

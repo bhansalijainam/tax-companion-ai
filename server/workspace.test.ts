@@ -86,6 +86,20 @@ d('workspace API (Better Auth + Postgres)', () => {
     expect((await call(`/api/cases/${caseId}`, { method: 'PUT', cookie: B.cookie, body: { version: 1, data: own.body.data } })).status).toBe(404);
   });
 
+  it('creates a client with a profile and phone, and rejects an invalid profile', async () => {
+    const profile = { salaried: true, employers: 2, paysRent: false, homeLoan: false, educationLoan: false, rentalIncome: false, capitalGains: false, business: false, investments80C: false, healthInsurance: false };
+    const created = await call('/api/clients', { method: 'POST', cookie: A.cookie, body: { name: 'Two Jobs', phone: '+91 98765 43210', profile } });
+    expect(created.status).toBe(201);
+    const loaded = await call(`/api/cases/${created.body.caseId}`, { cookie: A.cookie });
+    expect(loaded.body.data.profile).toEqual(profile);
+    expect(loaded.body.data.client.phone).toBe('+91 98765 43210');
+    const listed = (await call('/api/clients', { cookie: A.cookie })).body.clients.find((c: { id: string }) => c.id === created.body.client.id);
+    expect(listed.summary.items[0]).toMatchObject({ kind: 'form16', minCount: 2, status: 'missing' });
+
+    expect((await call('/api/clients', { method: 'POST', cookie: A.cookie, body: { name: 'Bad', profile: { salaried: 'yes' } } })).status).toBe(400);
+    expect((await call('/api/clients', { method: 'POST', cookie: A.cookie, body: { name: 'Bad', phone: '<script>' } })).status).toBe(400);
+  });
+
   it('saves with version checks and returns 409 on a stale save', async () => {
     const created = await call('/api/clients', { method: 'POST', cookie: A.cookie, body: { name: 'Concurrent client' } });
     const caseId = created.body.caseId;

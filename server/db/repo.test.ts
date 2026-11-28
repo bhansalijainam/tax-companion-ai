@@ -11,7 +11,9 @@ const { Pool } = pg;
 type Pool = pg.Pool;
 import { applySchema } from './migrate.js';
 import { ConflictError, LockedError, NotFoundError, Repo } from './repo.js';
-import { emptyCase } from '../../src/ai/pipeline.js';
+import { buildSampleCase, emptyCase } from '../../src/ai/pipeline.js';
+import { EMPTY_PROFILE } from '../../src/domain/checklist.js';
+import { buildPracticeCase, PRACTICE_PERSONAS } from '../../src/fixtures/samplePractice.js';
 
 const url = process.env.TEST_DATABASE_URL;
 const d = url ? describe : describe.skip;
@@ -39,6 +41,34 @@ d('repo (Postgres)', () => {
     expect(caseId).toBeTruthy();
     expect((await repo.listClients(A)).map((c) => c.id)).toContain(client.id);
     expect((await repo.listClients(B)).map((c) => c.id)).not.toContain(client.id);
+  });
+
+  it('stores a checklist summary on create and save, and the list applies the case status', async () => {
+    const profile = { ...EMPTY_PROFILE, salaried: true, employers: 1, capitalGains: true };
+    const { client, caseId } = await repo.createClient(A, 'user-a', { name: 'Checklist Client', fy: '2024-25', phone: '98765 43210', profile }, emptyCase());
+    let row = (await repo.listClients(A)).find((c) => c.id === client.id)!;
+    expect(row.summary?.stage).toBe('not-started');
+    expect(row.summary?.items.map((i) => i.kind)).toEqual(['form16', 'capital-gains', 'bank-statement', 'ais']);
+    expect(row.summary?.phone).toBe('98765 43210');
+
+    const c = buildPracticeCase(PRACTICE_PERSONAS.find((p) => p.id === 'c03')!); // everything but capital gains
+    await repo.saveCase(A, caseId, 'user-a', 1, { ...c, audit: [] });
+    row = (await repo.listClients(A)).find((x) => x.id === client.id)!;
+    expect(row.summary?.stage).toBe('awaiting-docs');
+    expect(row.summary?.items.find((i) => i.kind === 'capital-gains')?.status).toBe('missing');
+
+    await repo.setStatus(A, caseId, 'user-a', 'partner', 'final');
+    row = (await repo.listClients(A)).find((x) => x.id === client.id)!;
+    expect(row.summary?.stage).toBe('filed');
+  });
+
+  it('backfills the summary for cases saved before checklists existed', async () => {
+    const { client, caseId } = await repo.createClient(A, 'user-a', { name: 'Legacy Client', fy: '2024-25' }, emptyCase());
+    await pool.query('update cases set summary = null, data = $1 where id = $2', [buildSampleCase(), caseId]);
+    const row = (await repo.listClients(A)).find((x) => x.id === client.id)!;
+    expect(row.summary?.items.some((i) => i.kind === 'capital-gains')).toBe(true); // inferred from the documents
+    const { rows } = await pool.query('select summary from cases where id = $1', [caseId]);
+    expect(rows[0].summary).not.toBeNull();
   });
 
   it('never returns another firm’s case', async () => {

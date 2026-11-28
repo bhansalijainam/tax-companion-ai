@@ -9,6 +9,7 @@ import { lazy, Suspense } from "react";
 
 // The signed-in workspace loads separately, so the public demo stays light
 const WorkspaceApp = lazy(() => import("./pages/workspace/WorkspaceApp"));
+const DemoPractice = lazy(() => import("./pages/practice/DemoPractice"));
 import { CaseProvider } from "./state/CaseContext";
 import { ThemeProvider } from "next-themes";
 
@@ -35,6 +36,14 @@ const App = () => (
             element={
               <Suspense fallback={<div className="min-h-screen bg-background" />}>
                 <WorkspaceApp />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/practice/*"
+            element={
+              <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                <DemoPractice />
               </Suspense>
             }
           />

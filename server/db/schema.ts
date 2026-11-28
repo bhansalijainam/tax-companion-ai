@@ -29,6 +29,9 @@ create table if not exists cases (
   unique (client_id, fy)
 );
 create index if not exists cases_firm_idx on cases (firm_id, updated_at desc);
+-- Checklist summary (src/domain/checklist.ts), recomputed on every save so the
+-- dashboard never loads full case documents. Null on rows saved before M2.
+alter table cases add column if not exists summary jsonb;
 
 create table if not exists audit_events (
   id             bigserial primary key,
