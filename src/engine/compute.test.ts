@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { compareRegimes, computeTax, hraExemption, oldRegimeBreakEven, slabTax } from './compute';
-import { emptyInputs, TaxInputs } from './types';
+import { compareRegimes, computeTax, hraExemption, oldRegimeBreakEven, slabTax } from './compute.js';
+import { emptyInputs, TaxInputs } from './types.js';
 
 /** Build inputs from a partial patch (one level deep per head). */
 function inputs(patch: { [K in keyof TaxInputs]?: Partial<TaxInputs[K]> }): TaxInputs {

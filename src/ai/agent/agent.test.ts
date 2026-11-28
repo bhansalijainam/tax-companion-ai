@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildSampleCase } from '../pipeline';
-import { ScriptedProvider, classifyIntent } from '../llm/providers/scripted';
-import { runAgent } from './runAgent';
-import { checkAnswerGrounding } from './grounding';
-import { executeTool } from './tools';
-import { caseSummary, deriveFlags } from '../../domain/caseFile';
-import type { CompletionResponse, LLMProvider } from '../llm/types';
+import { buildSampleCase } from '../pipeline.js';
+import { ScriptedProvider, classifyIntent } from '../llm/providers/scripted.js';
+import { runAgent } from './runAgent.js';
+import { checkAnswerGrounding } from './grounding.js';
+import { executeTool } from './tools.js';
+import { caseSummary, deriveFlags } from '../../domain/caseFile.js';
+import type { CompletionResponse, LLMProvider } from '../llm/types.js';
 
 const sample = buildSampleCase();
 

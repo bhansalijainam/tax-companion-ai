@@ -1,5 +1,5 @@
-import type { Fact } from '../src/domain/types';
-import type { ExtractionCase, GoldFact } from './datasets/extraction';
+import type { Fact } from '../src/domain/types.js';
+import type { ExtractionCase, GoldFact } from './datasets/extraction.js';
 
 const sameValue = (a: number | boolean | string, b: number | string) => {
   if (typeof b === 'string') return String(a).toUpperCase() === b.toUpperCase();

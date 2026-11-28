@@ -9,17 +9,17 @@
  * re-run) and rendered on the Evals page of the app.
  */
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { AGENT_CASES } from '../evals/datasets/agent';
-import { EXTRACTION_CASES } from '../evals/datasets/extraction';
-import { aggregate, scoreCase, CaseScore } from '../evals/score';
-import { runAgent } from '../src/ai/agent/runAgent';
-import { LLMExtractor, Extractor } from '../src/ai/extraction/llmExtractor';
-import { decideRoute, HybridExtractor } from '../src/ai/extraction/hybridExtractor';
-import { RulesExtractor } from '../src/ai/extraction/rulesExtractor';
-import { AnthropicProvider } from '../src/ai/llm/providers/anthropic';
-import { ScriptedProvider } from '../src/ai/llm/providers/scripted';
-import type { LLMProvider } from '../src/ai/llm/types';
-import { applyExtraction, buildSampleCase } from '../src/ai/pipeline';
+import { AGENT_CASES } from '../evals/datasets/agent.js';
+import { EXTRACTION_CASES } from '../evals/datasets/extraction.js';
+import { aggregate, scoreCase, CaseScore } from '../evals/score.js';
+import { runAgent } from '../src/ai/agent/runAgent.js';
+import { LLMExtractor, Extractor } from '../src/ai/extraction/llmExtractor.js';
+import { decideRoute, HybridExtractor } from '../src/ai/extraction/hybridExtractor.js';
+import { RulesExtractor } from '../src/ai/extraction/rulesExtractor.js';
+import { AnthropicProvider } from '../src/ai/llm/providers/anthropic.js';
+import { ScriptedProvider } from '../src/ai/llm/providers/scripted.js';
+import type { LLMProvider } from '../src/ai/llm/types.js';
+import { applyExtraction, buildSampleCase } from '../src/ai/pipeline.js';
 
 const arg = (name: string) => {
   const i = process.argv.indexOf(`--${name}`);

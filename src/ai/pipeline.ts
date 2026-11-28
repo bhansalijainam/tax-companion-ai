@@ -1,8 +1,8 @@
-import type { CaseDocument, CaseFile, Fact, Flag } from '../domain/types';
-import { SAMPLE_CLIENT, SAMPLE_DOCUMENTS } from '../fixtures/sampleDocuments';
-import { finalizeExtraction } from './extraction/grounding';
-import type { ExtractorRun } from './extraction/llmExtractor';
-import { rulesExtract } from './extraction/rulesExtractor';
+import type { CaseDocument, CaseFile, Fact, Flag } from '../domain/types.js';
+import { SAMPLE_CLIENT, SAMPLE_DOCUMENTS } from '../fixtures/sampleDocuments.js';
+import { finalizeExtraction } from './extraction/grounding.js';
+import type { ExtractorRun } from './extraction/llmExtractor.js';
+import { rulesExtract } from './extraction/rulesExtractor.js';
 
 export interface ExtractionApplied {
   facts: Fact[];

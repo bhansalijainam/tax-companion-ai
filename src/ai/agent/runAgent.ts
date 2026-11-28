@@ -1,8 +1,8 @@
-import type { CaseFile } from '../../domain/types';
-import type { LLMMessage, LLMProvider, ToolResult, Usage } from '../llm/types';
-import { checkAnswerGrounding, GroundingReport } from './grounding';
-import { AGENT_SYSTEM_PROMPT } from './systemPrompt';
-import { executeTool, TOOL_SPECS } from './tools';
+import type { CaseFile } from '../../domain/types.js';
+import type { LLMMessage, LLMProvider, ToolResult, Usage } from '../llm/types.js';
+import { checkAnswerGrounding, GroundingReport } from './grounding.js';
+import { AGENT_SYSTEM_PROMPT } from './systemPrompt.js';
+import { executeTool, TOOL_SPECS } from './tools.js';
 
 export interface AgentStep {
   tool: string;

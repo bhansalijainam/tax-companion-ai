@@ -27,7 +27,7 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:8080. Without an API key it runs in **demo mode**: documents are read by a rules baseline and the assistant is a scripted provider. The tools, tax engine, verification checks and UI are the same ones live mode uses.
+Then open http://localhost:8080/practice for the multi-client practice dashboard (ten fictional clients, document checklists, WhatsApp reminders), or http://localhost:8080 for the single-case AI walkthrough. Without an API key it runs in **demo mode**: documents are read by a rules baseline and the assistant is a scripted provider. The tools, tax engine, verification checks and UI are the same ones live mode uses.
 
 For **live mode**, put `ANTHROPIC_API_KEY=...` in `.env.local` and restart. The key stays on the server: Vite serves the same handlers as the Vercel functions in `api/`.
 
@@ -39,6 +39,16 @@ A good path through the demo:
 4. **Assistant**: ask *"What if the client invests ₹50,000 in NPS?"*. Open the tool trace and note the "figures traced to tools" badge.
 5. **Tax computation**: both regimes side by side, each line tagged with its section.
 6. **Evals**: what the LLM is for. The rules baseline gets 100% recall on template documents but **14% on other issuers' formats**.
+
+## Practice workspace (beta)
+
+At `/app`, a CA firm can sign in, see every client's document checklist and stage on one dashboard, and work on cases that are saved on the server and shared across the firm. Partners invite preparers by link, and only partners can mark a case final. Every change lands in an append-only audit trail. Firms are isolated from each other; this is tested against real Postgres in CI. The public demo at `/` is unchanged and needs no account.
+
+```bash
+DATABASE_URL=postgres://... BETTER_AUTH_SECRET=$(openssl rand -base64 32) npm run db:migrate
+```
+
+Then run `npm run dev` with the same variables and open http://localhost:8080/app. Design decisions are in [`docs/adr/0001-db-and-auth.md`](docs/adr/0001-db-and-auth.md). The plan and its status are in [`.claude/plans/practice-workspace.plan.md`](.claude/plans/practice-workspace.plan.md).
 
 ## Architecture
 
@@ -88,6 +98,7 @@ The baseline is perfect on the layouts it was written for and fails on almost ev
 | `npm run dev` | App and `/api` on :8080 |
 | `npm test` | Unit tests (engine, extraction, grounding, agent loop) |
 | `npm run typecheck` | Strict TS for engine/AI/server, app TS for the UI |
+| `npm run db:migrate` | Create/upgrade auth and workspace tables (idempotent) |
 | `npm run evals` | Baseline evals. Add `-- --extractor anthropic` or `-- --agent anthropic` for Claude |
 | `npm run smoke:live` | Live-mode wiring against a mock Messages API (no key needed) |
 | `npm run build` | Production build. Deploy to Vercel as is (`vercel.json`, `api/`) |

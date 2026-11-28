@@ -6,7 +6,10 @@ import { detectKind } from '@/ai/extraction/rulesExtractor';
 import { caseSummary } from '@/domain/caseFile';
 import type { FactField } from '@/domain/fields';
 import { FIELDS } from '@/domain/fields';
-import type { CaseDocument, CaseFile, Fact, FlagState } from '@/domain/types';
+import type { CaseDocument, CaseFile, ClientProfile, Fact, FlagState } from '@/domain/types';
+import { evaluateChecklist } from '@/domain/checklist';
+import type { SampleDocument } from '@/fixtures/sampleDocuments';
+import { CaseStatus, CaseStore, LocalCaseStore, Role, SaveResult } from './caseStore';
 
 export interface ChatMessage {
   id: string;
@@ -26,7 +29,10 @@ type Action =
   | { type: 'setFactStatus'; ids: string[]; status: Fact['status'] }
   | { type: 'editFact'; id: string; value: number | boolean | string }
   | { type: 'addFact'; fact: Fact }
-  | { type: 'setFlagState'; id: string; status: FlagState['status']; note?: string };
+  | { type: 'setFlagState'; id: string; status: FlagState['status']; note?: string }
+  | { type: 'setProfile'; profile: ClientProfile }
+  | { type: 'setContact'; phone?: string; email?: string }
+  | { type: 'log'; action: string; detail: string };
 
 const now = () => new Date().toISOString();
 
@@ -84,19 +90,17 @@ function reducer(c: CaseFile, a: Action): CaseFile {
         flagState: { ...c.flagState, [a.id]: { status: a.status, note: a.note, at: now() } },
         audit: audit('ca', `flag.${a.status}`, `${a.id}${a.note ? ` — ${a.note}` : ''}`),
       };
+    case 'setProfile': {
+      const changed = (Object.keys(a.profile) as (keyof ClientProfile)[]).filter((k) => c.profile?.[k] !== a.profile[k]);
+      if (!changed.length && c.profile) return c;
+      return { ...c, profile: a.profile, audit: audit('ca', 'profile.updated', changed.map((k) => `${k}: ${String(a.profile[k])}`).join(', ') || 'profile confirmed') };
+    }
+    case 'log':
+      return { ...c, audit: audit('ca', a.action, a.detail) };
+    case 'setContact':
+      if ((a.phone ?? '') === (c.client.phone ?? '') && (a.email ?? '') === (c.client.email ?? '')) return c;
+      return { ...c, client: { ...c.client, phone: a.phone || undefined, email: a.email || undefined }, audit: audit('ca', 'contact.updated', 'Client contact details changed') };
   }
-}
-
-const STORAGE_KEY = 'tax-companion:case:v1';
-
-function loadInitial(): CaseFile {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as CaseFile;
-  } catch {
-    /* fall through to the sample case */
-  }
-  return buildSampleCase();
 }
 
 function readFile(file: File): Promise<{ text?: string; base64?: string }> {
@@ -114,8 +118,20 @@ function readFile(file: File): Promise<{ text?: string; base64?: string }> {
   });
 }
 
-function useCaseState() {
-  const [caseFile, dispatch] = useReducer(reducer, undefined, loadInitial);
+export type SaveState = 'idle' | 'saving' | 'saved' | 'conflict' | 'locked' | 'error';
+
+const SAVE_DEBOUNCE_MS = 800;
+
+function useCaseState(store: CaseStore) {
+  const [caseFile, dispatch] = useReducer(reducer, undefined, () => store.initial() ?? emptyCase());
+  const [ready, setReady] = useState(store.initial() !== null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [caseStatus, setCaseStatus] = useState<CaseStatus | undefined>();
+  const [role, setRole] = useState<Role | undefined>();
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const lastSaved = useRef<CaseFile | null>(null);
+  const failedFor = useRef<CaseFile | null>(null);
   const [status, setStatus] = useState<LiveStatus | null>(null);
   const [preferDemo, setPreferDemo] = useState(false);
   const [chat, setChat] = useState<ChatMessage[]>([]);
@@ -127,17 +143,61 @@ function useCaseState() {
     fetchLiveStatus().then(setStatus);
   }, []);
 
+  // Load from the store (async for the server store)
   useEffect(() => {
-    try {
-      // Binary payloads are not persisted; text and facts are
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...caseFile, documents: caseFile.documents.map(({ base64: _b, ...d }) => d) }));
-    } catch {
-      /* storage full or unavailable: state still works in memory */
-    }
-  }, [caseFile]);
+    let cancelled = false;
+    store.load().then(
+      (loaded) => {
+        if (cancelled) return;
+        lastSaved.current = loaded.data;
+        dispatch({ type: 'reset', caseFile: loaded.data });
+        setCaseStatus(loaded.status);
+        setRole(loaded.role);
+        setReady(true);
+      },
+      (e) => !cancelled && setLoadError(e instanceof Error ? e.message : String(e)),
+    );
+    return () => { cancelled = true; };
+  }, [store]);
 
-  const mode: Mode = status?.live && !preferDemo ? 'live' : 'demo';
+  // Persist changes. The demo saves immediately; the server store is debounced and version-checked.
+  useEffect(() => {
+    if (!ready || caseFile === lastSaved.current) return;
+    if (saveState === 'conflict' || saveState === 'locked') return; // wait for the user to reload / reopen
+    if (saveState === 'error' && failedFor.current === caseFile) return; // retry only after another change
+    const delay = store.kind === 'api' ? SAVE_DEBOUNCE_MS : 0;
+    const t = setTimeout(async () => {
+      setSaveState('saving');
+      const r: SaveResult = await store.save(caseFile);
+      if (!('reason' in r)) {
+        lastSaved.current = caseFile;
+        setSaveState('saved');
+        setSaveMessage(null);
+      } else {
+        failedFor.current = caseFile;
+        setSaveState(r.reason);
+        setSaveMessage(r.message);
+      }
+    }, delay);
+    return () => clearTimeout(t);
+  }, [caseFile, ready, store, saveState]);
+
+  const changeStatus = useCallback(async (next: CaseStatus) => {
+    if (!store.setStatus) return;
+    const r = await store.setStatus(next);
+    if (!('reason' in r)) {
+      setCaseStatus(r.status);
+      if (saveState === 'locked') setSaveState('idle');
+    } else {
+      setSaveMessage(r.message);
+    }
+  }, [store, saveState]);
+
+  // Signed-in firms use live AI only when the server allows it for members; the public demo stays scripted
+  const liveAllowed = status?.live && (!status.signInRequired || store.kind === 'api');
+  const mode: Mode = liveAllowed && !preferDemo ? 'live' : 'demo';
   const summary = useMemo(() => caseSummary(caseFile), [caseFile]);
+  const checklist = useMemo(() => evaluateChecklist(caseFile, caseStatus), [caseFile, caseStatus]);
 
   const runExtraction = useCallback(async (doc: CaseDocument) => {
     dispatch({ type: 'patchDocument', id: doc.id, patch: { status: 'extracting', error: undefined } });
@@ -166,6 +226,13 @@ function useCaseState() {
     }
   }, [runExtraction]);
 
+  /** Demo only: a sample document arrives as if the client had uploaded it. */
+  const addSampleDocument = useCallback((d: SampleDocument) => {
+    const doc: CaseDocument = { id: d.id, name: d.name, kind: d.kind, mimeType: 'text/plain', size: d.text.length, text: d.text, status: 'queued' };
+    dispatch({ type: 'addDocument', doc });
+    void runExtraction(doc);
+  }, [runExtraction]);
+
   const sendChat = useCallback(async (text: string) => {
     const userMsg: ChatMessage = { id: `u${Date.now()}`, role: 'user', content: text };
     const history = chat.filter((m) => !m.error).map((m) => ({ role: m.role, content: m.content }));
@@ -192,9 +259,13 @@ function useCaseState() {
   }, []);
 
   return {
-    caseFile, dispatch, summary, status, mode, preferDemo, setPreferDemo,
+    store, ready, loadError, caseStatus, role, saveState, saveMessage, changeStatus,
+    caseFile, dispatch, summary, checklist, status, mode, preferDemo, setPreferDemo,
     chat, chatBusy, sendChat, clearChat: () => setChat([]),
-    uploadFiles, runExtraction, addManualFact,
+    uploadFiles, runExtraction, addManualFact, addSampleDocument,
+    setProfile: (profile: ClientProfile) => dispatch({ type: 'setProfile', profile }),
+    setContact: (phone?: string, email?: string) => dispatch({ type: 'setContact', phone, email }),
+    logEvent: (action: string, detail: string) => dispatch({ type: 'log', action, detail }),
     loadSample: () => { dispatch({ type: 'reset', caseFile: buildSampleCase() }); setChat([]); },
     startEmpty: () => { dispatch({ type: 'reset', caseFile: emptyCase() }); setChat([]); },
   };
@@ -203,8 +274,10 @@ function useCaseState() {
 type CaseCtx = ReturnType<typeof useCaseState>;
 const Ctx = createContext<CaseCtx | null>(null);
 
-export function CaseProvider({ children }: { children: ReactNode }) {
-  const value = useCaseState();
+const defaultStore = new LocalCaseStore();
+
+export function CaseProvider({ children, store = defaultStore }: { children: ReactNode; store?: CaseStore }) {
+  const value = useCaseState(store);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

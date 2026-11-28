@@ -1,8 +1,8 @@
-import type { CaseDocument } from '../../domain/types';
-import type { Attachment, LLMProvider, Usage } from '../llm/types';
-import { LLMError } from '../llm/types';
-import { EXTRACTION_SYSTEM_PROMPT, extractionUserPrompt } from './prompt';
-import { ExtractionOutput, extractionJsonSchema } from './schema';
+import type { CaseDocument } from '../../domain/types.js';
+import type { Attachment, LLMProvider, Usage } from '../llm/types.js';
+import { LLMError } from '../llm/types.js';
+import { EXTRACTION_SYSTEM_PROMPT, extractionUserPrompt } from './prompt.js';
+import { ExtractionOutput, extractionJsonSchema } from './schema.js';
 
 export interface ExtractorRun {
   output: ExtractionOutput;

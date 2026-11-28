@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-15T19:17:10.750Z",
+  "generatedAt": "2026-11-26T21:51:45.513Z",
   "extraction": {
     "rules": {
       "system": "rules:v1",
-      "ranAt": "2026-11-15T19:17:10.750Z",
+      "ranAt": "2026-11-26T21:51:45.513Z",
       "overall": {
         "cases": 14,
         "precision": 1,
@@ -67,7 +67,7 @@
           "forbiddenHits": 0,
           "missed": [],
           "extra": [],
-          "latencyMs": 1
+          "latencyMs": 2
         },
         {
           "id": "doc-bank",
@@ -81,7 +81,7 @@
           "forbiddenHits": 0,
           "missed": [],
           "extra": [],
-          "latencyMs": 0
+          "latencyMs": 1
         },
         {
           "id": "doc-lic",
@@ -261,7 +261,7 @@
             }
           ],
           "extra": [],
-          "latencyMs": 0
+          "latencyMs": 1
         },
         {
           "id": "var-nps-elss",
@@ -310,7 +310,7 @@
   "agent": {
     "scripted": {
       "system": "scripted:scripted-demo",
-      "ranAt": "2026-11-15T19:17:10.750Z",
+      "ranAt": "2026-11-26T21:51:45.513Z",
       "passRate": 1,
       "groundedRate": 1,
       "meanSteps": 1.5,
@@ -328,7 +328,7 @@
             "get_flags"
           ],
           "steps": 2,
-          "latencyMs": 13,
+          "latencyMs": 28,
           "usage": {
             "inputTokens": 0,
             "outputTokens": 0,
@@ -409,7 +409,7 @@
             "search_documents"
           ],
           "steps": 1,
-          "latencyMs": 0,
+          "latencyMs": 2,
           "usage": {
             "inputTokens": 0,
             "outputTokens": 0,
@@ -442,7 +442,7 @@
     }
   },
   "routing": {
-    "ranAt": "2026-11-15T19:17:10.750Z",
+    "ranAt": "2026-11-26T21:51:45.513Z",
     "llmShare": 0.35714285714285715,
     "bySplit": {
       "template": {

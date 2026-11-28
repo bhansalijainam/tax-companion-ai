@@ -1,4 +1,4 @@
-import { FACT_FIELDS, FIELDS } from '../../domain/fields';
+import { FACT_FIELDS, FIELDS } from '../../domain/fields.js';
 
 const fieldCatalogue = FACT_FIELDS.map((f) => `- ${f} (${FIELDS[f].kind}): ${FIELDS[f].hint}`).join('\n');
 

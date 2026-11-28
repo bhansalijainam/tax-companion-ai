@@ -4,6 +4,7 @@ import { MOBILE_NAV, type Section } from '@/components/nav';
 import { ModeIndicator } from '@/components/common';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { DashboardView } from '@/components/views/DashboardView';
+import { ChecklistView } from '@/components/views/ChecklistView';
 import { DocumentsView } from '@/components/views/DocumentsView';
 import { ReviewView } from '@/components/views/ReviewView';
 import { FlagsView } from '@/components/views/FlagsView';
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
 import { useCase } from '@/state/CaseContext';
 import { cn } from '@/lib/utils';
+import { SaveBanner, WorkspaceBar } from '@/components/WorkspaceBar';
 
 const SECTIONS = new Set<Section>(MOBILE_NAV.map((n) => n.id));
 
@@ -24,9 +26,15 @@ function sectionFromHash(): Section {
   return SECTIONS.has(h) ? h : 'dashboard';
 }
 
-const Index = () => {
+/**
+ * `workspace`: a server-saved firm case (signed in).
+ * `practiceDemo`: one client of the public demo practice (/practice).
+ * Neither: the single-case public demo at /.
+ */
+const Index = ({ workspace = false, practiceDemo = false }: { workspace?: boolean; practiceDemo?: boolean }) => {
+  const backTo = practiceDemo ? '/practice' : '/app';
   const [active, setActive] = useState<Section>(sectionFromHash);
-  const { loadSample, caseFile } = useCase();
+  const { loadSample, caseFile, ready, loadError } = useCase();
 
   useEffect(() => {
     const onHash = () => setActive(sectionFromHash());
@@ -42,6 +50,7 @@ const Index = () => {
 
   const views: Record<Section, JSX.Element> = {
     dashboard: <DashboardView go={go} />,
+    checklist: <ChecklistView go={go} />,
     documents: <DocumentsView go={go} />,
     review: <ReviewView />,
     flags: <FlagsView />,
@@ -52,6 +61,19 @@ const Index = () => {
     architecture: <ArchitectureView />,
   };
 
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6 text-center">
+        <div className="space-y-3">
+          <p className="font-medium">This case could not be opened.</p>
+          <p className="text-sm text-muted-foreground">{loadError}</p>
+          <a className="text-sm underline text-accent" href={backTo}>Back to clients</a>
+        </div>
+      </div>
+    );
+  }
+  if (!ready) return <div className="min-h-screen bg-background flex items-center justify-center text-sm text-muted-foreground">Opening case…</div>;
+
   return (
     <div className="flex min-h-screen w-full bg-background">
       <AppSidebar activeSection={active} onSectionChange={go} />
@@ -61,16 +83,20 @@ const Index = () => {
           <div className="h-14 px-4 md:px-6 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-sm font-semibold truncate">
-                {caseFile.client.name} <span className="text-muted-foreground font-normal">· PAN {caseFile.client.pan} · AY {caseFile.client.ay}</span>
+                {caseFile.client.name || 'Untitled client'}{' '}
+                <span className="text-muted-foreground font-normal">{caseFile.client.pan ? `· PAN ${caseFile.client.pan} ` : ''}· AY {caseFile.client.ay}</span>
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <ModeIndicator />
+              {workspace || practiceDemo ? <WorkspaceBar backTo={backTo} /> : null}
+              {!workspace && <ModeIndicator compact={practiceDemo} />}
               <ThemeToggle />
-              <Button variant="ghost" size="sm" onClick={loadSample} title="Reset to the sample case">
-                <RotateCcw className="w-4 h-4" />
-                <span className="hidden sm:inline">Reset demo</span>
-              </Button>
+              {!workspace && !practiceDemo && (
+                <Button variant="ghost" size="sm" onClick={loadSample} title="Reset to the sample case">
+                  <RotateCcw className="w-4 h-4" />
+                  <span className="hidden sm:inline">Reset demo</span>
+                </Button>
+              )}
             </div>
           </div>
           <nav className="md:hidden flex gap-1 overflow-x-auto px-3 pb-2 no-scrollbar">
@@ -87,7 +113,10 @@ const Index = () => {
         </header>
 
         <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
-          <div className="mx-auto max-w-6xl">{views[active]}</div>
+          <div className="mx-auto max-w-6xl">
+            {(workspace || practiceDemo) && <SaveBanner />}
+            {views[active]}
+          </div>
         </main>
       </div>
     </div>

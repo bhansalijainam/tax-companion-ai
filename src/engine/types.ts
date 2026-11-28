@@ -1,4 +1,4 @@
-import type { Regime } from './rules';
+import type { Regime } from './rules.js';
 
 /**
  * Normalised inputs for the tax engine. Every field is in rupees for the financial year.

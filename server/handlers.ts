@@ -7,12 +7,14 @@
  */
 import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import { runAgent } from '../src/ai/agent/runAgent';
-import { HybridExtractor } from '../src/ai/extraction/hybridExtractor';
-import { Extractor, LLMExtractor } from '../src/ai/extraction/llmExtractor';
-import { AnthropicProvider, DEFAULT_ANTHROPIC_MODEL } from '../src/ai/llm/providers/anthropic';
-import { LLMError, LLMProvider } from '../src/ai/llm/types';
-import type { CaseFile } from '../src/domain/types';
+import { runAgent } from '../src/ai/agent/runAgent.js';
+import { HybridExtractor } from '../src/ai/extraction/hybridExtractor.js';
+import { Extractor, LLMExtractor } from '../src/ai/extraction/llmExtractor.js';
+import { AnthropicProvider, DEFAULT_ANTHROPIC_MODEL } from '../src/ai/llm/providers/anthropic.js';
+import { LLMError, LLMProvider } from '../src/ai/llm/types.js';
+import type { CaseFile } from '../src/domain/types.js';
+import { resolveMember } from './auth.js';
+import { workspaceEnabled } from './db/pool.js';
 
 const MAX_BODY_BYTES = 4_000_000; // Vercel's request limit is ~4.5 MB
 
@@ -63,7 +65,16 @@ export function rateLimited(req: Request, now = Date.now()): boolean {
   return recent.length > RATE_LIMIT_PER_MIN;
 }
 
-function guard(req: Request): Response | null {
+/**
+ * Paid AI routes. With the practice workspace configured (DATABASE_URL set), callers
+ * must be signed-in firm members; the public demo then uses the scripted provider.
+ * Without a database, the optional shared ACCESS_TOKEN applies (self-hosted demo).
+ */
+async function guard(req: Request): Promise<Response | null> {
+  if (workspaceEnabled()) {
+    const r = await resolveMember(req);
+    if (!r.ok) return json({ error: r.error }, r.status);
+  }
   const token = process.env.ACCESS_TOKEN;
   if (token && !tokensMatch(req.headers.get('x-access-token') ?? '', token)) {
     return json({ error: 'Access token required for live mode' }, 401);
@@ -97,6 +108,8 @@ export async function handleHealth(): Promise<Response> {
     live: Boolean(p), provider: p?.id ?? null, model: p?.model ?? null,
     extraction: process.env.EXTRACTION_STRATEGY === 'hybrid' ? 'hybrid' : 'llm',
     accessTokenRequired: Boolean(process.env.ACCESS_TOKEN),
+    workspace: workspaceEnabled(),
+    signInRequired: workspaceEnabled(),
   });
 }
 
@@ -110,7 +123,7 @@ const ExtractBody = z.object({
 });
 
 export async function handleExtract(req: Request): Promise<Response> {
-  const denied = guard(req);
+  const denied = await guard(req);
   if (denied) return denied;
   const provider = createProvider();
   if (!provider) return json({ error: 'Live mode is not configured' }, 503);
@@ -131,7 +144,7 @@ const ChatBody = z.object({
 });
 
 export async function handleChat(req: Request): Promise<Response> {
-  const denied = guard(req);
+  const denied = await guard(req);
   if (denied) return denied;
   const provider = createProvider();
   if (!provider) return json({ error: 'Live mode is not configured' }, 503);

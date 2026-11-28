@@ -6,6 +6,19 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    services:
+      # Real Postgres for the workspace tenant-isolation and concurrency tests
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: taxco_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/taxco_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,7 +28,14 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm test
+      - name: Tests (incl. workspace isolation against Postgres)
+        run: npm test
+      - name: Migrations are idempotent
+        run: |
+          DATABASE_URL=$TEST_DATABASE_URL npm run db:migrate
+          DATABASE_URL=$TEST_DATABASE_URL npm run db:migrate
+      - name: API functions load under plain Node ESM (as on Vercel)
+        run: npm run check:functions
       - name: Live-mode wiring (mock Messages API, no key)
         run: npm run smoke:live
       - name: Baseline evals (rules extractor + scripted agent)

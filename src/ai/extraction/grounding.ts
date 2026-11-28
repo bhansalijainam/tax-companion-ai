@@ -1,6 +1,6 @@
-import { FIELDS } from '../../domain/fields';
-import type { CaseDocument, Fact, Flag } from '../../domain/types';
-import type { ExtractionOutput } from './schema';
+import { FIELDS } from '../../domain/fields.js';
+import type { CaseDocument, Fact, Flag } from '../../domain/types.js';
+import type { ExtractionOutput } from './schema.js';
 
 const normalize = (s: string) => s.toLowerCase().replace(/[‘’]/g, "'").replace(/\s+/g, ' ').trim();
 

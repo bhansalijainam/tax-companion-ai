@@ -1,4 +1,4 @@
-import type { DocKind } from '../domain/types';
+import type { DocKind } from '../domain/types.js';
 
 /**
  * Synthetic client documents for the demo case. All names, PANs, account numbers

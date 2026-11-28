@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  LayoutDashboard, FileStack, ListChecks, AlertTriangle, Calculator, MessageSquare, FileDown, Gauge, Workflow,
+  LayoutDashboard, ClipboardCheck, FileStack, ListChecks, AlertTriangle, Calculator, MessageSquare, FileDown, Gauge, Workflow,
   ChevronLeft, ChevronRight, Landmark,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,13 +15,14 @@ interface SidebarProps {
 
 export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const { summary, caseFile } = useCase();
+  const { summary, caseFile, store, checklist } = useCase();
 
   const groups: { title: string; items: { id: Section; label: string; icon: typeof LayoutDashboard; badge?: number }[] }[] = [
     {
       title: 'Case',
       items: [
         { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+        { id: 'checklist', label: 'Checklist', icon: ClipboardCheck, badge: checklist.items.filter((i) => i.status === 'missing' && !i.optional).length || undefined },
         { id: 'documents', label: 'Documents', icon: FileStack, badge: caseFile.documents.length },
         { id: 'review', label: 'Review facts', icon: ListChecks, badge: summary.pendingReview || undefined },
         { id: 'flags', label: 'Flags', icon: AlertTriangle, badge: summary.openFlags.length || undefined },
@@ -101,8 +102,8 @@ export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
 
       {!collapsed && (
         <div className="p-4 border-t border-sidebar-border text-xs text-sidebar-foreground/60">
-          <p className="font-medium text-sidebar-foreground/80">{caseFile.client.name}</p>
-          <p>FY {caseFile.client.fy} · synthetic demo client</p>
+          <p className="font-medium text-sidebar-foreground/80">{caseFile.client.name || "Untitled client"}</p>
+          <p>FY {caseFile.client.fy}{store.kind === 'local' ? ' · synthetic demo client' : ''}</p>
         </div>
       )}
     </aside>

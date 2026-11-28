@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { EXTRACTION_CASES } from '../../../evals/datasets/extraction';
-import { SAMPLE_DOCUMENTS } from '../../fixtures/sampleDocuments';
-import { applyExtraction } from '../pipeline';
-import { decideRoute, HybridExtractor } from './hybridExtractor';
-import type { Extractor, ExtractorRun } from './llmExtractor';
-import { RulesExtractor } from './rulesExtractor';
+import { EXTRACTION_CASES } from '../../../evals/datasets/extraction.js';
+import { SAMPLE_DOCUMENTS } from '../../fixtures/sampleDocuments.js';
+import { applyExtraction } from '../pipeline.js';
+import { decideRoute, HybridExtractor } from './hybridExtractor.js';
+import type { Extractor, ExtractorRun } from './llmExtractor.js';
+import { RulesExtractor } from './rulesExtractor.js';
 
 const fakeLlm = (): Extractor & { calls: number } => {
   const e = {

@@ -1,7 +1,7 @@
-import type { FactField } from '../../domain/fields';
-import type { CaseDocument, DocKind } from '../../domain/types';
-import type { Extractor, ExtractorRun } from './llmExtractor';
-import type { ExtractionOutput } from './schema';
+import type { FactField } from '../../domain/fields.js';
+import type { CaseDocument, DocKind } from '../../domain/types.js';
+import type { Extractor, ExtractorRun } from './llmExtractor.js';
+import type { ExtractionOutput } from './schema.js';
 
 /**
  * Deterministic regex baseline. It exists for two reasons:
@@ -42,6 +42,8 @@ const RULES: LineRule[] = [
   { field: 'capitalGains.stcg111A', match: /111a/i, label: 'STCG u/s 111A', kinds: ['capital-gains'] },
   { field: 'capitalGains.ltcg112A', match: /112a/i, label: 'LTCG u/s 112A', kinds: ['capital-gains'] },
 
+  { field: 'business.netProfit', match: /net profit/i, label: 'Net profit (P&L)', kinds: ['business-financials'] },
+
   { field: 'recon.aisTds', match: /total tds reported/i, label: 'AIS total TDS', kinds: ['ais'] },
   { field: 'recon.aisSavingsInterest', match: /interest income - savings/i, label: 'AIS savings interest', kinds: ['ais'] },
   { field: 'recon.aisDepositInterest', match: /interest income - time deposit/i, label: 'AIS deposit interest', kinds: ['ais'] },
@@ -56,6 +58,8 @@ const KIND_HINTS: [DocKind, RegExp][] = [
   ['bank-statement', /statement of account|bank statement/i],
   ['investment-proof', /provident fund|premium paid certificate|80c/i],
   ['rent-receipt', /rent receipt/i],
+  ['business-financials', /profit and loss|profit & loss account|balance sheet/i],
+  ['property-docs', /rent agreement|leave and licen[cs]e|property tax receipt/i],
 ];
 
 export function detectKind(text: string): DocKind {

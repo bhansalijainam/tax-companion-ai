@@ -15,9 +15,11 @@ function apiDevServer(): Plugin {
         if (!req.url?.startsWith("/api/")) return next();
         try {
           const handlers = await server.ssrLoadModule("/server/handlers.ts");
+          const workspace = await server.ssrLoadModule("/server/workspace.ts");
           const chunks: Buffer[] = [];
           for await (const chunk of req) chunks.push(chunk as Buffer);
-          const request = new Request(new URL(req.url, "http://localhost"), {
+          // Real host + port, so Better Auth's origin checks match the browser
+          const request = new Request(new URL(req.url, `http://${req.headers.host ?? "localhost"}`), {
             method: req.method,
             headers: req.headers as Record<string, string>,
             body: req.method === "GET" || req.method === "HEAD" ? undefined : Buffer.concat(chunks),
@@ -27,9 +29,11 @@ function apiDevServer(): Plugin {
             route === "/api/health" ? await handlers.handleHealth()
             : route === "/api/extract" && req.method === "POST" ? await handlers.handleExtract(request)
             : route === "/api/chat" && req.method === "POST" ? await handlers.handleChat(request)
-            : new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+            : (await workspace.routeWorkspace(request)) ?? new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
           res.statusCode = response.status;
-          response.headers.forEach((v, k) => res.setHeader(k, v));
+          response.headers.forEach((v, k) => { if (k !== "set-cookie") res.setHeader(k, v); });
+          const cookies = response.headers.getSetCookie();
+          if (cookies.length) res.setHeader("set-cookie", cookies);
           res.end(Buffer.from(await response.arrayBuffer()));
         } catch (err) {
           server.config.logger.error(String(err));

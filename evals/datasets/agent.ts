@@ -3,9 +3,9 @@
  * deterministic engine at eval time, so the eval checks that the agent reports the
  * engine's numbers rather than a hard-coded copy that could drift.
  */
-import { caseSummary } from '../../src/domain/caseFile';
-import { executeTool } from '../../src/ai/agent/tools';
-import type { CaseFile } from '../../src/domain/types';
+import { caseSummary } from '../../src/domain/caseFile.js';
+import { executeTool } from '../../src/ai/agent/tools.js';
+import type { CaseFile } from '../../src/domain/types.js';
 
 export interface AgentCase {
   id: string;

@@ -16,8 +16,8 @@ import {
   STCG_111A_RATE,
   SURCHARGE,
   SURCHARGE_CAP_SPECIAL_RATE_GAINS,
-} from './rules';
-import type { RegimeComparison, TaxInputs, TaxResult, TraceLine } from './types';
+} from './rules.js';
+import type { RegimeComparison, TaxInputs, TaxResult, TraceLine } from './types.js';
 
 const r = (n: number) => Math.round(n);
 const fmt = (n: number) => Math.round(n).toLocaleString("en-IN");
