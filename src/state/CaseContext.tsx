@@ -203,7 +203,11 @@ function useCaseState(store: CaseStore) {
   const summary = useMemo(() => caseSummary(caseFile), [caseFile]);
   const checklist = useMemo(() => evaluateChecklist(caseFile, caseStatus), [caseFile, caseStatus]);
 
+  // Every read started in this session, manual or automatic, so the auto-reader never starts a second one
+  const startedReads = useRef(new Set<string>());
+
   const runExtraction = useCallback(async (doc: CaseDocument) => {
+    startedReads.current.add(doc.id);
     dispatch({ type: 'patchDocument', id: doc.id, patch: { status: 'extracting', error: undefined } });
     try {
       // A client's PDF or photo lives on the server, not in the case; fetch it to read it
@@ -218,14 +222,12 @@ function useCaseState(store: CaseStore) {
   }, [mode, store]);
 
   // Live AI reads files clients sent through their upload link as soon as the case opens
-  const autoRead = useRef(new Set<string>());
   useEffect(() => {
     if (!ready || mode !== 'live' || caseStatus === 'final') return;
     for (const d of caseRef.current.documents) {
       // 'extracting' here means a read was cut off by a reload or closed tab: this session never started it
-      if (d.source === 'client' && (d.status === 'queued' || d.status === 'extracting') && !autoRead.current.has(d.id)) {
-        autoRead.current.add(d.id);
-        void runExtraction(d);
+      if (d.source === 'client' && (d.status === 'queued' || d.status === 'extracting') && !startedReads.current.has(d.id)) {
+        void runExtraction(d); // records the id before any await
       }
     }
   }, [ready, mode, caseStatus, caseFile.documents.length, runExtraction]);
